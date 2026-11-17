@@ -1,0 +1,1347 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quote Abbonamenti</title>
+<meta name="description" content="Dividi gli abbonamenti con amici e famiglia: chi deve pagare, quanto e quando.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Quote">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#EAF2F0" id="themeColor">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+/* Una sola schermata: titolo in alto, contenuto che scorre, barra delle schede in basso. Fogli a schermo intero per le modifiche. */
+:root {
+  --bg: #eaf2f0; --cell: #ffffff; --fg: #14201e; --ink2: #6f7c79; --sep: #dcdfe0;
+  --accent: #0f8a7a; --accent-soft: #d8efeb; --on-accent: #ffffff;
+  --late: #d7372f; --ok: #1f9d5c; --warn: #b4540a; --switch-off: #e3e3e8; --banner: rgb(245 245 247 / .96);
+  --f: system-ui, -apple-system, "Roboto", "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent }
+html, body { margin: 0; height: 100%; overflow: hidden; -webkit-text-size-adjust: 100%; background: var(--bg); color: var(--fg); font-family: var(--f); font-size: 15px; line-height: 1.4 }
+button, input, select { font: inherit; color: inherit }
+[hidden] { display: none !important }
+.num { font-variant-numeric: tabular-nums }
+
+#app { display: flex; flex-direction: column; height: 100% }
+.top { padding: calc(14px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 4px max(16px, env(safe-area-inset-left, 0px)); display: flex; align-items: center; gap: 8px; flex: none }
+.top h1 { font-size: 1.8rem; font-weight: 800; margin: 0; flex: 1; min-width: 0; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.iconbtn { border: 0; background: none; color: var(--accent); font-size: 1rem; padding: 8px 6px; cursor: pointer; border-radius: 8px; white-space: nowrap }
+.iconbtn.big { font-size: 1.7rem; line-height: 1; padding: 2px 8px }
+.view { flex: 1; overflow-y: auto; padding: 4px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); overscroll-behavior: contain; display: flex; flex-direction: column; gap: 6px; -webkit-overflow-scrolling: touch }
+.view > * { flex-shrink: 0 }
+.sechead { font-size: .78rem; text-transform: uppercase; color: var(--ink2); padding: 14px 16px 6px; letter-spacing: .02em; display: flex; justify-content: space-between; gap: 8px }
+.sechead .st { text-transform: none; letter-spacing: 0; font-weight: 600 }
+.secfoot { font-size: .8rem; color: var(--ink2); padding: 6px 16px 4px }
+.group { background: var(--cell); border-radius: 12px; overflow: hidden }
+.row { display: flex; align-items: center; gap: 12px; padding: 11px 16px; position: relative; min-height: 46px }
+.row + .row::before, .row + .acts::before, .acts + .row::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: 0.5px solid var(--sep) }
+.row .grow { flex: 1; min-width: 0 }
+.sub { font-size: .8rem; color: var(--ink2) }
+.sub.late, .st.late { color: var(--late) } .sub.ok, .st.ok { color: var(--ok) } .st.due, .change { color: var(--warn) }
+.change { font-size: .74rem; font-weight: 600 }
+.tap { cursor: pointer }
+.row.off .grow { opacity: .45 }
+.link { color: var(--accent) }
+.danger { color: var(--late) }
+.empty { text-align: center; padding: 28px 16px; color: var(--ink2); display: flex; flex-direction: column; gap: 12px; align-items: center }
+.empty b { color: var(--fg); font-size: 1.05rem }
+.btn { border: 0; border-radius: 12px; background: var(--accent); color: var(--on-accent); font-weight: 700; padding: 12px 18px; cursor: pointer }
+.btn.ghost { background: var(--accent-soft); color: var(--accent) }
+.hint { background: var(--accent-soft); color: var(--fg); border-radius: 12px; padding: 12px 14px; font-size: .86rem; display: flex; gap: 10px; align-items: flex-start }
+.hint b { color: var(--accent) }
+.hint button { border: 0; background: none; color: var(--ink2); font-size: 1rem; cursor: pointer; padding: 0 2px; margin-left: auto }
+
+/* switch e controlli */
+.switch { appearance: none; -webkit-appearance: none; width: 51px; height: 31px; border-radius: 16px; background: var(--switch-off); position: relative; cursor: pointer; flex: none; transition: background .2s; margin: 0 }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgb(0 0 0 / .25); transition: transform .2s }
+.switch:checked { background: var(--accent) }
+.switch:checked::after { transform: translateX(20px) }
+.seg { display: flex; flex: 1; background: var(--bg); border-radius: 9px; padding: 2px; min-width: 0 }
+.seg button { flex: 1; min-width: 0; border: 0; background: transparent; font-size: .82rem; padding: 7px 2px; border-radius: 7px; cursor: pointer }
+.seg button.sel { background: var(--cell); box-shadow: 0 1px 3px rgb(0 0 0 / .18); font-weight: 700 }
+.seg button:disabled { opacity: .4 }
+.in { border: 0; background: transparent; outline: none; min-width: 0; text-align: right; flex: 1 }
+.in.left { text-align: left }
+.in::placeholder { color: var(--ink2) }
+select.in { appearance: none; -webkit-appearance: none; text-align-last: right; color: var(--accent) }
+.box { border: 1px solid var(--sep); border-radius: 8px; padding: 6px 8px; background: var(--bg) }
+.chip { border: 0; border-radius: 999px; background: var(--bg); padding: 6px 11px; font-size: .82rem; cursor: pointer }
+.chip.sel { background: var(--accent-soft); color: var(--accent); font-weight: 700 }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 16px 12px }
+.stepper { display: flex; align-items: center; gap: 4px; background: var(--bg); border-radius: 9px; padding: 2px; flex: none }
+.stepper button { border: 0; background: var(--cell); width: 34px; height: 30px; border-radius: 7px; font-size: 1.1rem; cursor: pointer }
+.stepper span { min-width: 30px; text-align: center; font-weight: 700 }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+/* tile categorie */
+.tile { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex: none; color: #fff }
+.tile svg, .tabbar svg { width: 19px; height: 19px }
+.ico { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+.ico .f { fill: currentColor; stroke: none }
+.cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px; padding: 12px }
+.cat { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: .72rem; cursor: pointer; padding: 6px 2px; border-radius: 12px }
+.cat .tile { width: 42px; height: 42px; border-radius: 11px }
+.cat .tile svg { width: 24px; height: 24px }
+.cat.sel { box-shadow: 0 0 0 2px var(--accent); font-weight: 700 }
+
+/* questo mese */
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px 16px 8px }
+.stats div { display: flex; flex-direction: column; min-width: 0 }
+.stats small { font-size: .72rem; color: var(--ink2) }
+.stats b { font-size: .95rem; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.bar { height: 6px; border-radius: 3px; background: var(--accent-soft); overflow: hidden; margin: 0 16px 12px }
+.bar i { display: block; height: 100%; background: var(--ok) }
+.latebar { padding: 0 16px 12px; font-size: .85rem; font-weight: 700; color: var(--late) }
+.ck { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--sep); background: transparent; display: grid; place-items: center; color: #fff; cursor: pointer; flex: none; font-size: .85rem; padding: 0 }
+.ck.on { background: var(--ok); border-color: var(--ok) }
+.amt { font-variant-numeric: tabular-nums; flex: none }
+.amt.paid { color: var(--ink2) }
+.paidname { text-decoration: line-through; color: var(--ink2) }
+.acts { display: flex; gap: 8px; padding: 10px 16px; position: relative }
+.act { flex: 1; text-align: center; border-radius: 10px; background: var(--accent-soft); color: var(--accent); padding: 9px 4px; font-size: .85rem; font-weight: 700; border: 0; cursor: pointer }
+.per { display: block; font-size: .7rem; color: var(--ink2); text-align: right }
+
+/* calendario */
+.cal { padding: 10px 10px 12px; display: flex; flex-direction: column; gap: 6px }
+.calhead { display: flex; align-items: center; justify-content: space-between; padding: 0 4px }
+.calhead button { border: 0; background: none; color: var(--accent); font-size: 1.3rem; cursor: pointer; width: 38px; height: 32px; border-radius: 8px }
+.wk, .days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px }
+.wk span { text-align: center; font-size: .68rem; font-weight: 700; color: var(--ink2) }
+.wk span:nth-child(n+6) { color: var(--warn) }
+.d { aspect-ratio: 1; border: 0; border-radius: 50%; background: transparent; font-size: .92rem; font-variant-numeric: tabular-nums; position: relative; display: grid; place-items: center; padding: 0 }
+button.d { cursor: pointer }
+.d.we { color: var(--warn) }
+.d.today { font-weight: 800; color: var(--accent) }
+.d.today::before { content: "oggi"; position: absolute; top: 1px; font-size: .5rem; font-weight: 700 }
+.d.dot::after { content: ""; position: absolute; bottom: 4px; left: 50%; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--ink2) }
+.d.on { background: var(--accent); color: var(--on-accent); font-weight: 800 }
+.d.on::after { background: var(--on-accent) }
+.d.paused { background: var(--accent-soft); color: var(--accent); font-weight: 700 }
+.d.fires { box-shadow: inset 0 0 0 2px var(--accent); font-weight: 800 }
+.d.ghost { color: var(--ink2); text-decoration: line-through }
+.calnote { font-size: .8rem; color: var(--ink2); padding: 2px 6px 0 }
+.calnote b { color: var(--fg) }
+.lastday { width: 100%; border: 0; border-radius: 10px; padding: 9px; background: var(--bg); cursor: pointer }
+.lastday.sel { background: var(--accent); color: var(--on-accent); font-weight: 700 }
+
+/* notifica di anteprima */
+.notif { background: var(--banner); border-radius: 18px; padding: 11px 13px; display: flex; gap: 10px; border: 0.5px solid var(--sep) }
+.notif .ap { width: 36px; height: 36px; border-radius: 9px; overflow: hidden; flex: none }
+.notif .grow { min-width: 0; flex: 1 }
+.notif .t { display: flex; justify-content: space-between; font-size: .75rem; color: var(--ink2) }
+.notif b { display: block; font-size: .9rem }
+.notif p { margin: 2px 0 0; font-size: .85rem; white-space: pre-line }
+
+/* statistiche */
+.kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; padding: 12px 16px }
+.kpis div { display: flex; flex-direction: column; min-width: 0 }
+.kpis div:first-child { grid-column: 1 / -1; padding-bottom: 10px; border-bottom: 0.5px solid var(--sep) }
+.kpis div:first-child b { font-size: 1.5rem }
+.kpis small { font-size: .72rem; color: var(--ink2) }
+.kpis b { font-size: 1.05rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere }
+.donut { display: flex; gap: 14px; align-items: center; padding: 12px 16px }
+.donut svg { width: 116px; height: 116px; flex: none }
+.legend { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; font-size: .8rem }
+.legend div { display: flex; align-items: center; gap: 6px }
+.legend i { width: 8px; height: 8px; border-radius: 50%; flex: none }
+.legend span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.legend em { font-style: normal; color: var(--ink2); font-variant-numeric: tabular-nums }
+.chart { padding: 10px 12px 4px }
+.chart svg { width: 100%; height: auto; display: block }
+.key { display: flex; gap: 14px; font-size: .74rem; color: var(--ink2); padding: 0 16px 10px }
+.key i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px }
+.badge { font-size: .72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; flex: none }
+.badge.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok) }
+.badge.mid { background: color-mix(in srgb, var(--warn) 15%, transparent); color: var(--warn) }
+.badge.bad { background: color-mix(in srgb, var(--late) 15%, transparent); color: var(--late) }
+.hbar { height: 5px; border-radius: 3px; margin-top: 4px }
+
+/* impostazioni */
+.themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px }
+.theme { border: 0; background: var(--bg); border-radius: 14px; padding: 12px 4px 9px; display: flex; flex-direction: column; align-items: center; gap: 7px; font-size: .8rem; cursor: pointer }
+.theme .sw { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800 }
+.theme.sel { box-shadow: 0 0 0 2px var(--accent); font-weight: 700 }
+
+/* barra schede */
+.tabbar { display: flex; border-top: 0.5px solid var(--sep); background: var(--cell); padding: 6px 4px calc(8px + env(safe-area-inset-bottom, 0px)); flex: none }
+.tabbar button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: .64rem; color: var(--ink2); border: 0; background: none; cursor: pointer; padding: 2px 0 }
+.tabbar button svg { width: 24px; height: 24px }
+.tabbar button.on { color: var(--accent); font-weight: 700 }
+
+/* foglio a schermo intero */
+.sheet { position: fixed; inset: 0; background: var(--bg); z-index: 20; display: flex; flex-direction: column; animation: up .25s ease-out }
+@keyframes up { from { transform: translateY(30px); opacity: 0 } }
+.sheet .bar2 { display: flex; align-items: center; gap: 6px; padding: calc(10px + env(safe-area-inset-top, 0px)) 10px 6px; flex: none }
+.sheet .view { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) }
+.sheet .bar2 .t { flex: 1; text-align: center; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.sheet .bar2 .save { font-weight: 800 }
+.sheet .bar2 .save:disabled { opacity: .35 }
+
+.toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); font-size: .88rem; padding: 9px 16px; border-radius: 999px; z-index: 40; max-width: calc(100% - 32px); text-align: center }
+
+/* schermata di accesso */
+.lock { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; text-align: center; color: #fff; overflow: hidden;
+  background: linear-gradient(180deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 62%, #000) 58%, #070b0a 100%) }
+.lock .tiles { position: absolute; inset: 0; pointer-events: none; overflow: hidden }
+.lock .tiles .tile { position: absolute; bottom: -70px; opacity: .2; animation: floatUp linear infinite }
+@keyframes floatUp { from { transform: translateY(0) rotate(-12deg) } to { transform: translateY(-1100px) rotate(12deg) } }
+.lock .body { position: relative; flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; padding: 18vh 28px 36px }
+.lock .ai-wrap { position: relative; width: 100px; height: 100px }
+.lock .ring { position: absolute; inset: -16px; border-radius: 50%; border: 2px solid rgb(255 255 255 / .55); opacity: 0 }
+.lock .ai { width: 100px; height: 100px; border-radius: 23px; overflow: hidden; box-shadow: 0 12px 28px -10px rgb(0 0 0 / .55); transition: transform .35s cubic-bezier(.34, 1.56, .64, 1), box-shadow .35s }
+.lock .ai svg { width: 100%; height: 100%; display: block }
+.lock h2 { font-size: 1.6rem; font-weight: 800; margin: 22px 0 4px }
+.lock .gr { opacity: .85 }
+.lock .unlock { margin-top: auto; width: 100%; border: 0; border-radius: 16px; background: #fff; color: var(--accent); font-weight: 800; font-size: 1rem; padding: 15px; cursor: pointer }
+.lock .note { font-size: .78rem; opacity: .75; margin-top: 12px }
+.lock .err { font-size: .8rem; font-weight: 700; background: rgb(215 55 47 / .8); padding: 5px 12px; border-radius: 999px; margin-bottom: 12px }
+.ai .chk { stroke-dasharray: 420; stroke-dashoffset: 0 }
+.ai .coin { transform-box: fill-box; transform-origin: center }
+.lock.intro .ai { animation: iconIn .7s cubic-bezier(.34, 1.56, .64, 1) both }
+.lock.intro .ring { animation: ring 1.6s ease-out .25s both }
+.lock.intro .ai .chk { stroke-dashoffset: 420; animation: draw .45s ease-out .35s forwards }
+.lock.intro .ai .coin { opacity: 0; animation: coinIn .65s cubic-bezier(.34, 1.56, .64, 1) .6s forwards }
+.lock.intro h2 { animation: rise .5s ease-out .45s both }
+.lock.intro .gr { animation: rise .5s ease-out .55s both }
+.lock.intro .unlock, .lock.intro .note { animation: rise .55s ease-out .7s both }
+.lock.success .ai { transform: scale(1.12); box-shadow: 0 0 44px rgb(255 255 255 / .65) }
+.lock.opening { animation: openUp .55s ease-in forwards }
+@keyframes iconIn { from { transform: scale(.55); opacity: 0 } }
+@keyframes ring { from { transform: scale(.9); opacity: .8 } to { transform: scale(2); opacity: 0 } }
+@keyframes draw { to { stroke-dashoffset: 0 } }
+@keyframes coinIn { from { transform: scale(.2) rotateY(200deg); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes rise { from { opacity: 0; transform: translateY(18px) } }
+@keyframes openUp { to { opacity: 0; transform: scale(1.18); visibility: hidden } }
+@media (prefers-reduced-motion: reduce) {
+  .lock.intro *, .sheet { animation: none !important } .lock.intro .ai .chk { stroke-dashoffset: 0 } .lock.intro .ai .coin { opacity: 1 }
+  .lock .tiles { display: none } .switch, .switch::after { transition: none }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top" id="top"></div>
+  <main class="view" id="view"></main>
+  <nav class="tabbar" id="tabbar" aria-label="Schede"></nav>
+</div>
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true">
+  <div class="bar2"><button class="iconbtn" id="shCancel">Annulla</button><span class="t" id="shTitle"></span><button class="iconbtn save" id="shSave">Salva</button></div>
+  <div class="view" id="shBody"></div>
+</div>
+<div class="lock" id="lock" hidden>
+  <div class="tiles" id="lockTiles" aria-hidden="true"></div>
+  <div class="body">
+    <div class="ai-wrap"><span class="ring"></span><div class="ai" id="lockIcon"></div></div>
+    <h2>Quote Abbonamenti</h2>
+    <div class="gr" id="lockGreet"></div>
+    <div style="margin-top:auto;width:100%;display:flex;flex-direction:column;align-items:center">
+      <div class="err" id="lockErr" hidden></div>
+      <button class="unlock" id="unlockBtn">Sblocca</button>
+      <div class="note">I tuoi dati restano solo su questo telefono.</div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+"use strict";
+/* ==========================================================================
+   Quote Abbonamenti per Android.
+   Tutta l'app è qui; la parte Android (Java) fornisce window.Android per:
+   salvataggio dei dati, notifiche programmate con i pulsanti "ha pagato",
+   sblocco con impronta/PIN, apertura di WhatsApp/SMS, salvataggio e apertura dei file.
+   Nel browser (per le prove) usa localStorage e le funzioni del browser.
+   ========================================================================== */
+const A = window.Android || null;
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const STANDALONE = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+
+// ---------- utilità ----------
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const chf = (n) => "CHF " + (Math.round(n * 100) / 100).toFixed(2);
+const two = (n) => String(n).padStart(2, "0");
+const rappen = (x) => Math.round(x * 20) / 20;
+const round2 = (x) => Math.round(x * 100) / 100;
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const MONTHS = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+const WD = ["dom","lun","mar","mer","gio","ven","sab"];
+const WDL = ["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const now = () => new Date();
+const daysIn = (y, m) => new Date(y, m + 1, 0).getDate();
+const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const endOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
+const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+const mkey = (y, m) => `${y}-${two(m + 1)}`;
+const keyOf = (d) => mkey(d.getFullYear(), d.getMonth());
+const fmtShort = (d) => `${WD[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}`;
+const fmtDate = (d) => `${WDL[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+const withYear = (d) => `${fmtShort(d)} ${d.getFullYear()}`;
+const personKey = (n) => n.trim().toLowerCase();
+const parseAmount = (s) => { const v = parseFloat(String(s).replace(/'/g, "").replace(/\s/g, "").replace(",", ".")); return isFinite(v) && v >= 0 ? v : 0; };
+const daysBetween = (a, b) => Math.round((startOfDay(b) - startOfDay(a)) / 86400000);
+
+// ---------- icone ----------
+const ICONS = {
+  mese: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 9.5h17M8 3v4M16 3v4M9 15l2 2 4-4"/>',
+  abbonamenti: '<rect x="2.5" y="6" width="19" height="13" rx="2.5"/><path d="M2.5 10.5h19M6.5 15.5h4"/><path d="M5 3.5h14"/>',
+  statistiche: '<path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5H12Z"/><path d="M15 2.8A8.5 8.5 0 0 1 21.2 9H15Z"/>',
+  promemoria: '<path d="M6 10a6 6 0 0 1 12 0c0 4.5 1.4 6 2.5 7h-17C4.6 16 6 14.5 6 10Z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  impostazioni: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>',
+  musica: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+  video: '<rect x="3" y="4.5" width="18" height="12.5" rx="2.5"/><path d="M8.5 20.5h7"/><path class="f" d="M10.5 8.3v5.4l4.6-2.7z"/>',
+  cloud: '<path d="M7 18.5a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 10.6a3.9 3.9 0 0 1-.4 7.9Z"/>',
+  giochi: '<path d="M7.5 8h9a4.5 4.5 0 0 1 4.5 4.5v1a3 3 0 0 1-5.3 1.9L14.4 14H9.6l-1.3 1.4A3 3 0 0 1 3 13.5v-1A4.5 4.5 0 0 1 7.5 8Z"/><path d="M7.7 10.3v3.4M6 12h3.4"/><circle class="f" cx="15.6" cy="11" r="1"/><circle class="f" cx="17.6" cy="13" r="1"/>',
+  notizie: '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h10A1.5 1.5 0 0 1 17 5.5V18a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2Z"/><path d="M17 9h2.5v9a2 2 0 0 1-2 2M7.5 8h6M7.5 11.5h6M7.5 15h4"/>',
+  fitness: '<path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/>',
+  software: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><path d="M16.5 13.5v6M13.5 16.5h6"/>',
+  internet: '<path d="M3.5 9.5a12.5 12.5 0 0 1 17 0M6.8 13a8 8 0 0 1 10.4 0M10 16.5a3.2 3.2 0 0 1 4 0"/><circle class="f" cx="12" cy="19.6" r="1.1"/>',
+  altro: '<circle class="f" cx="6" cy="12" r="1.6"/><circle class="f" cx="12" cy="12" r="1.6"/><circle class="f" cx="18" cy="12" r="1.6"/>',
+};
+const CATS = {
+  musica: { name: "Musica", color: "#E0457B", keys: ["spotify", "apple music", "deezer", "tidal", "youtube music", "soundcloud", "audible"] },
+  video: { name: "Video", color: "#D9342B", keys: ["netflix", "disney", "prime video", "amazon prime", "apple tv", "sky", "dazn", "paramount", "youtube", "blue", "teleclub", "zattoo"] },
+  cloud: { name: "Cloud", color: "#2F80ED", keys: ["icloud", "google one", "dropbox", "onedrive", "drive", "cloud"] },
+  giochi: { name: "Giochi", color: "#7B5CF0", keys: ["playstation", "ps plus", "xbox", "game pass", "nintendo", "steam", "arcade"] },
+  notizie: { name: "Notizie", color: "#C47F17", keys: ["giornale", "news", "corriere", "nzz", "tages", "blick", "rsi", "times", "kindle", "magazine"] },
+  fitness: { name: "Fitness", color: "#1F9D5C", keys: ["palestra", "gym", "fitness", "strava", "peloton", "yoga"] },
+  software: { name: "Software", color: "#55657A", keys: ["office", "microsoft 365", "adobe", "chatgpt", "claude", "notion", "1password", "canva"] },
+  internet: { name: "Internet e telefono", color: "#0E97A6", keys: ["swisscom", "sunrise", "salt", "wingo", "yallo", "internet", "telefono", "mobile", "fibra", "wifi"] },
+  altro: { name: "Altro", color: "#8A8A8E", keys: [] },
+};
+const icon = (n) => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ICONS.altro}</svg>`;
+const tile = (cat, size) => { const c = CATS[cat] || CATS.altro; return `<span class="tile" style="background:${c.color}${size ? `;width:${size}px;height:${size}px;border-radius:${Math.round(size * .27)}px` : ""}">${icon(CATS[cat] ? cat : "altro")}</span>`; };
+const guessCat = (name) => { const n = name.toLowerCase(); for (const [k, c] of Object.entries(CATS)) if (c.keys.some((x) => n.includes(x))) return k; return "altro"; };
+const APPICON = '<svg viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#17A693"/><stop offset="1" stop-color="#0A5F54"/></linearGradient></defs><rect width="1024" height="1024" fill="url(#g1)"/><rect x="212" y="272" width="560" height="500" rx="92" fill="#fff"/><path d="M212 364a92 92 0 0 1 92-92h376a92 92 0 0 1 92 92v38H212z" fill="#CDEDE7"/><rect x="338" y="214" width="48" height="122" rx="24" fill="#fff" stroke="#0A5F54" stroke-width="14"/><rect x="598" y="214" width="48" height="122" rx="24" fill="#fff" stroke="#0A5F54" stroke-width="14"/><path class="chk" d="M352 570l88 88 170-180" fill="none" stroke="#0F8A7A" stroke-width="66" stroke-linecap="round" stroke-linejoin="round"/><g class="coin"><circle cx="738" cy="724" r="138" fill="#F6C343" stroke="#fff" stroke-width="30"/><circle cx="738" cy="724" r="88" fill="none" stroke="#D99A1E" stroke-width="18"/><path d="M712 676h64M712 676v100M712 724h52" fill="none" stroke="#9A6510" stroke-width="22" stroke-linecap="round"/></g></svg>';
+
+// ---------- temi ----------
+const THEMES = {
+  classico: { name: "Classico", light: ["#007AFF", "#F2F2F7"], dark: ["#0A84FF", "#000000"] },
+  alpino: { name: "Alpino", light: ["#0F8A7A", "#EAF2F0"], dark: ["#3CC6B1", "#0B1312"] },
+  lago: { name: "Lago", light: ["#1D5FD1", "#EAF0FA"], dark: ["#6EA2FF", "#0A0F1A"] },
+  tramonto: { name: "Tramonto", light: ["#D2522A", "#FBEFE9"], dark: ["#FF8A5C", "#150D0A"] },
+  bosco: { name: "Bosco", light: ["#2F6B3A", "#EDF2E8"], dark: ["#7BC489", "#0C120C"] },
+  notte: { name: "Notte", light: ["#A99BFF", "#000000"], dark: ["#A99BFF", "#000000"], forceDark: true, cell: "#151318" },
+};
+const mq = window.matchMedia("(prefers-color-scheme: dark)");
+function applyTheme() {
+  const t = THEMES[S.settings.theme] || THEMES.alpino;
+  const sysDark = A && A.isNightMode ? A.isNightMode() : mq.matches;
+  const dark = t.forceDark || S.settings.mode === "scuro" || (S.settings.mode === "sistema" && sysDark);
+  const [accent, bg] = dark ? t.dark : t.light;
+  const cell = dark ? (t.cell || "#1C1C1E") : "#FFFFFF";
+  const v = { "--bg": bg, "--cell": cell, "--accent": accent, "--accent-soft": `color-mix(in srgb, ${accent} 20%, ${cell})`,
+    "--on-accent": dark ? "#0B0B0B" : "#FFFFFF", "--fg": dark ? "#F2F2F7" : "#14201E", "--sep": dark ? "#38383A" : "#DCDFE0",
+    "--ink2": dark ? "#8D8D93" : "#6F7C79", "--late": dark ? "#FF6961" : "#D7372F", "--ok": dark ? "#5FD38D" : "#1F9D5C",
+    "--warn": dark ? "#F0A35A" : "#B4540A", "--switch-off": dark ? "#39393D" : "#E3E3E8", "--banner": dark ? "rgb(44 44 46 / .96)" : "rgb(245 245 247 / .96)" };
+  const root = document.documentElement;
+  for (const k in v) root.style.setProperty(k, v[k]);
+  root.style.colorScheme = dark ? "dark" : "light";
+  if (A && A.setBars) try { A.setBars(bg, cell, !dark); } catch (e) {}
+  const tc = document.getElementById("themeColor"); if (tc) tc.setAttribute("content", bg);
+}
+mq.addEventListener && mq.addEventListener("change", applyTheme);
+
+// ---------- dati ----------
+const KEY = "qa.data.v1";
+const DEFAULT = () => ({ v: 1, subs: [], payments: {}, reminders: [], contacts: {},
+  settings: { theme: "alpino", mode: "sistema", twint: "", sign: "", fu: 5, lock: true, lockDelay: 0 } });
+let S = load();
+function load() {
+  let raw = null;
+  try { raw = A && A.loadData ? A.loadData() : localStorage.getItem(KEY); } catch (e) {}
+  if (!raw) { try { raw = localStorage.getItem(KEY); } catch (e) {} }
+  try { const j = JSON.parse(raw); if (j && j.v === 1) return Object.assign(DEFAULT(), j, { settings: Object.assign(DEFAULT().settings, j.settings) }); } catch (e) {}
+  return DEFAULT();
+}
+let saveTimer = null;
+function save() {
+  const json = JSON.stringify(S);
+  try { if (A && A.saveData) A.saveData(json); } catch (e) {}
+  try { localStorage.setItem(KEY, json); } catch (e) {}
+  clearTimeout(saveTimer); saveTimer = setTimeout(scheduleNotifications, 400);
+}
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), 2400); }
+
+// ---------- abbonamenti: prezzi, periodicità, rate ----------
+const PER = { 1: "al mese", 3: "al trimestre", 6: "al semestre", 12: "all'anno" };
+const COST = { 1: "Costo mensile", 3: "Costo trimestrale", 6: "Costo semestrale", 12: "Costo annuale" };
+function terms(sub, key) {
+  const h = (sub.history || []).slice().sort((a, b) => (a.from < b.from ? -1 : 1));
+  if (!h.length) return { total: sub.total, members: sub.members };
+  const c = h.slice().reverse().find((x) => x.from <= key) || h[0];
+  return { total: c.total, members: c.members };
+}
+const myShareOf = (t) => Math.max(0, t.total - t.members.reduce((a, m) => a + m.share, 0));
+const cyclePos = (sub, m1) => { const c = sub.cycle || 1; return (((m1 - (sub.renewal || 1)) % c) + c) % c; };
+const isRenewal = (sub, m1) => (sub.cycle || 1) === 1 || cyclePos(sub, m1) === 0;
+/** Quota del mese: tutta (mensile), una rata (l'ultima corregge l'arrotondamento) o tutto al rinnovo. */
+function dueShare(sub, share, m1) {
+  const c = sub.cycle || 1;
+  if (c === 1) return share;
+  if (sub.split === "rate") { const rate = rappen(share / c); return cyclePos(sub, m1) === c - 1 ? round2(share - rate * (c - 1)) : rate; }
+  return cyclePos(sub, m1) === 0 ? share : 0;
+}
+const monthly = (sub, v) => v / (sub.cycle || 1);
+function nextCharge(sub, from = now()) {
+  if ((sub.cycle || 1) === 1 && !sub.billingDay) return null;
+  for (let k = 0; k < 26; k++) {
+    const mo = new Date(from.getFullYear(), from.getMonth() + k, 1);
+    if (!isRenewal(sub, mo.getMonth() + 1)) continue;
+    const d = new Date(mo.getFullYear(), mo.getMonth(), Math.min(Math.max(sub.billingDay || 1, 1), daysIn(mo.getFullYear(), mo.getMonth())), 9);
+    if (d >= startOfDay(from)) return d;
+  }
+  return null;
+}
+const cancelDeadline = (charge, notice) => new Date(charge.getFullYear(), charge.getMonth(), charge.getDate() - Math.max(1, notice || 0), 9);
+const alertDate = (charge, notice, before) => { const d = cancelDeadline(charge, notice); return new Date(d.getFullYear(), d.getMonth(), d.getDate() - Math.max(0, before), 9); };
+const inTrial = (sub) => sub.trialEnd && endOfDay(new Date(sub.trialEnd)) >= now();
+
+// ---------- promemoria sul calendario vero ----------
+function nominal(r, y, m) { const n = daysIn(y, m); return new Date(y, m, r.day === 0 ? n : Math.min(r.day, n), r.h, r.m); }
+function occurrence(r, y, m) {
+  const d = nominal(r, y, m), wd = d.getDay();
+  if (r.we === "prima" && (wd === 6 || wd === 0)) d.setDate(d.getDate() - (wd === 6 ? 1 : 2));
+  if (r.we === "dopo" && (wd === 6 || wd === 0)) d.setDate(d.getDate() + (wd === 6 ? 2 : 1));
+  return d;
+}
+function sequence(r, until) {
+  if (r.rep === "una") return [occurrence(r, r.onceY, r.onceM)];
+  const st = new Date(r.start);
+  const end = r.endMode === "data" && r.endDate ? endOfDay(new Date(r.endDate)) : null;
+  const out = [];
+  for (let i = -1; i < 240; i++) {
+    const b = new Date(st.getFullYear(), st.getMonth() + i, 1);
+    if (until && b > until) break;
+    const d = occurrence(r, b.getFullYear(), b.getMonth());
+    if (d < st) continue;
+    if (end && d > end) break;
+    out.push(d);
+    if (r.endMode === "dopo" && out.length >= r.endCount) break;
+  }
+  return out;
+}
+/** Avviso che appartiene al mese (anche se il fine settimana lo sposta nel mese dopo). */
+function belonging(r, y, m) {
+  if (r.rep === "una") return r.onceY === y && r.onceM === m ? occurrence(r, y, m) : null;
+  const d = occurrence(r, y, m);
+  return sequence(r, new Date(y, m + 1, 1)).some((x) => +x === +d) ? d : null;
+}
+const lastOcc = (r) => (r.rep === "una" || r.endMode !== "mai") ? (sequence(r).slice(-1)[0] || null) : null;
+const isEnded = (r) => { const l = lastOcc(r); return r.endMode === "data" && !l ? true : !!l && l < now(); };
+function nextOcc(r, count) { const n = now(); return sequence(r, new Date(n.getFullYear(), n.getMonth() + count + 2, 1)).filter((d) => d > n).slice(0, count); }
+function nextWithMonth(r, count) {
+  const out = [], n = now();
+  for (let k = -1; k < count + 4 && out.length < count; k++) {
+    const b = new Date(n.getFullYear(), n.getMonth() + k, 1);
+    const d = belonging(r, b.getFullYear(), b.getMonth());
+    if (d && d > n) out.push({ date: d, y: b.getFullYear(), m: b.getMonth() });
+  }
+  return out;
+}
+const firesIn = (r, y, m) => sequence(r, new Date(y, m + 2, 1)).filter((d) => d.getFullYear() === y && d.getMonth() === m);
+const subsOf = (r) => r.all ? S.subs : S.subs.filter((s) => r.subs.includes(s.id));
+const dayText = (r) => r.day === 0 ? "L'ultimo giorno del mese" : r.day > 28 ? `Il ${r.day} (o l'ultimo giorno)` : `Il ${r.day} del mese`;
+const whenText = (r) => r.rep === "una" ? `Una volta: ${withYear(occurrence(r, r.onceY, r.onceM))} alle ${two(r.h)}:${two(r.m)}` : `${dayText(r)} alle ${two(r.h)}:${two(r.m)}`;
+
+// ---------- chi deve pagare ----------
+function dueDate(sub, y, m) {
+  const ds = S.reminders.filter((r) => r.on && (r.all || r.subs.includes(sub.id))).map((r) => belonging(r, y, m)).filter(Boolean);
+  return ds.length ? new Date(Math.min(...ds)) : new Date(y, m, 1, 9);
+}
+function peopleFor(y, m) {
+  const key = mkey(y, m), map = new Map(), n = now();
+  for (const s of S.subs) {
+    if (startOfDay(new Date(s.createdAt || 0)) > new Date(y, m + 1, 0)) continue; // abbonamento aggiunto dopo
+    for (const mem of terms(s, key).members) {
+      const share = dueShare(s, mem.share, m + 1);
+      const pk = personKey(mem.name);
+      if (!share || !pk) continue;
+      if (!map.has(pk)) map.set(pk, { key: pk, name: mem.name.trim(), items: [] });
+      const paid = (S.payments[key] || {})[`${s.id}|${pk}`] || null;
+      let due = dueDate(s, y, m);
+      const created = new Date(s.createdAt || 0);
+      if (created > due) due = new Date(created.getFullYear(), created.getMonth(), created.getDate(), 9);
+      map.get(pk).items.push({ sub: s, share: paid ? paid.amount : share, paid, due, late: paid ? 0 : Math.max(0, daysBetween(due, n)) });
+    }
+  }
+  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+function setPaid(y, m, sub, pk, amount, on) {
+  const key = mkey(y, m);
+  S.payments[key] = S.payments[key] || {};
+  if (on) S.payments[key][`${sub.id}|${pk}`] = { on: new Date().toISOString(), amount };
+  else delete S.payments[key][`${sub.id}|${pk}`];
+}
+function intlDigits(phone) {
+  let d = phone.replace(/\D/g, "");
+  if (phone.trim().startsWith("+")) return d;
+  if (d.startsWith("00")) return d.slice(2);
+  if (d.startsWith("0")) return "41" + d.slice(1);
+  return d;
+}
+function messageFor(p, owed, y, m) {
+  const lines = [`Ciao ${p.name}! Quote abbonamenti di ${MONTHS[m]} ${y}:`, ...owed.map((i) => `• ${i.sub.name}: ${chf(i.share)}`), `Totale: ${chf(owed.reduce((a, i) => a + i.share, 0))}.`];
+  if (owed.some((i) => i.late > 0)) lines.push(`Era da pagare entro ${fmtShort(new Date(Math.min(...owed.map((i) => i.due))))}.`);
+  const t = S.settings.twint.trim();
+  lines.push(t ? `Puoi mandarmeli con TWINT al ${t}? Grazie!` : "Puoi mandarmeli con TWINT? Grazie!");
+  if (S.settings.sign.trim()) lines.push(S.settings.sign.trim());
+  return lines.join("\n");
+}
+function notificationText(subs, y, m) {
+  const owed = new Map();
+  for (const p of peopleFor(y, m)) for (const i of p.items) if (subs.includes(i.sub)) {
+    const o = owed.get(p.key) || { name: p.name, total: 0, subs: [] }; o.total += i.share; o.subs.push(i.sub.name); owed.set(p.key, o);
+  }
+  if (!owed.size) {
+    const ren = subs.filter((s) => isRenewal(s, m + 1));
+    return ren.length ? { title: "Rinnovo abbonamenti", body: ren.map((s) => s.name).join(", ") } : null;
+  }
+  const total = [...owed.values()].reduce((a, o) => a + o.total, 0);
+  return { title: `Da incassare: ${chf(total)}`, body: [...owed.values()].map((o) => `${o.name}: ${chf(o.total)} (${o.subs.join(", ")})`).join("\n") + "\nTocca per segnare chi ha pagato." };
+}
+
+// ---------- apertura link, copia, file (Android o browser) ----------
+function openUrl(url) {
+  if (A && A.openUrl) { A.openUrl(url); return; }
+  if (/^https?:/.test(url)) window.open(url, "_blank"); else window.location.href = url;
+}
+async function copyText(text) {
+  if (A && A.copy) { A.copy(text); toast("Messaggio copiato"); return; }
+  try { await navigator.clipboard.writeText(text); toast("Messaggio copiato"); } catch (e) { toast("Copia non riuscita"); }
+}
+async function saveFile(name, mime, content) {
+  if (A && A.saveFile) { A.saveFile(name, mime, content); return; }
+  try {
+    const file = new File([content], name, { type: mime });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: name });
+      toast("File pronto: scegli “Salva su File” o dove vuoi tenerlo"); return;
+    }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([content], { type: mime })); a.download = name;
+  document.body.append(a); a.click(); a.remove(); toast("File scaricato");
+}
+
+/* ==========================================================================
+   Notifiche: calcolate qui e passate ad Android, che le programma.
+   ========================================================================== */
+function notifActions(subs, y, m) {
+  const owed = new Map(), key = mkey(y, m);
+  for (const p of peopleFor(y, m)) for (const i of p.items) if (subs.includes(i.sub) && !i.paid) {
+    const o = owed.get(p.key) || { name: p.name, sum: 0, items: [] };
+    o.sum += i.share; o.items.push({ s: i.sub.id, m: key, p: p.key, a: i.share }); owed.set(p.key, o);
+  }
+  const ranked = [...owed.values()].sort((a, b) => b.sum - a.sum);
+  const actions = ranked.slice(0, 2).map((o) => ({ title: `${o.name} ha pagato`, items: o.items }));
+  if (ranked.length > 1) actions.push({ title: "Hanno pagato tutti", items: ranked.flatMap((o) => o.items) });
+  return actions;
+}
+function buildSchedule() {
+  const list = [], n = now(), fu = S.settings.fu || 0;
+  // promemoria
+  for (const r of S.reminders.filter((x) => x.on)) {
+    const subs = subsOf(r); if (!subs.length) continue;
+    for (const o of nextWithMonth(r, 3)) {
+      const t = notificationText(subs, o.y, o.m); if (!t) continue;
+      let body = t.body;
+      const last = lastOcc(r);
+      if (r.rep === "mese" && last && sameDay(last, o.date)) body += "\nÈ l'ultimo promemoria: l'abbonamento sta per scadere.";
+      list.push({ at: +o.date, title: r.label || t.title, body, actions: notifActions(subs, o.y, o.m) });
+    }
+  }
+  // solleciti: un mese alla volta, solo chi non ha ancora pagato
+  if (fu > 0) {
+    const months = new Map();
+    for (const r of S.reminders.filter((x) => x.on)) for (let k = -1; k <= 2; k++) {
+      const b = new Date(n.getFullYear(), n.getMonth() + k, 1), d = belonging(r, b.getFullYear(), b.getMonth());
+      if (!d) continue;
+      const f = new Date(d.getFullYear(), d.getMonth(), d.getDate() + fu, d.getHours(), d.getMinutes());
+      if (f <= n) continue;
+      const mk = mkey(b.getFullYear(), b.getMonth()), e = months.get(mk) || { at: f, y: b.getFullYear(), m: b.getMonth(), subs: new Set() };
+      if (f < e.at) e.at = f; subsOf(r).forEach((s) => e.subs.add(s)); months.set(mk, e);
+    }
+    for (const e of months.values()) {
+      const unpaid = peopleFor(e.y, e.m).map((p) => ({ p, items: p.items.filter((i) => !i.paid && e.subs.has(i.sub)) })).filter((x) => x.items.length);
+      if (!unpaid.length) continue;
+      const tot = unpaid.reduce((a, x) => a + x.items.reduce((b, i) => b + i.share, 0), 0);
+      list.push({ at: +e.at, title: `Ancora da incassare: ${chf(tot)}`,
+        body: unpaid.map((x) => `${x.p.name}: ${chf(x.items.reduce((b, i) => b + i.share, 0))} (${x.items.map((i) => i.sub.name).join(", ")})`).join("\n") + "\nTocca per mandare un sollecito.",
+        actions: notifActions([...e.subs], e.y, e.m) });
+    }
+  }
+  // rinnovi e prove gratuite
+  for (const s of S.subs) {
+    const price = `${chf(terms(s, keyOf(n)).total)} ${PER[s.cycle || 1]}`;
+    if (inTrial(s)) {
+      const end = new Date(s.trialEnd), at = new Date(end.getFullYear(), end.getMonth(), end.getDate() - Math.max(1, s.alertDays || 3), 9);
+      if (at > n) list.push({ at: +at, title: `La prova di ${s.name} finisce ${fmtShort(end)}`, body: `Dopo costerà ${price}. Se non ti interessa, disdici prima di quella data.`, actions: [] });
+      continue;
+    }
+    if (!s.renewalAlert) continue;
+    let from = n;
+    for (let k = 0; k < 2; k++) {
+      const c = nextCharge(s, from); if (!c) break;
+      from = new Date(c.getFullYear(), c.getMonth(), c.getDate() + 1);
+      const at = alertDate(c, s.notice, s.alertDays || 3), dl = cancelDeadline(c, s.notice);
+      if (at > n) list.push({ at: +at, title: `${s.name} si rinnova ${fmtShort(c)}`,
+        body: s.notice ? `Costo ${price}. Per disdire hai tempo fino a ${fmtDate(dl)} (preavviso di ${s.notice} giorni).` : `Costo ${price}. Se vuoi disdire, fallo entro ${fmtDate(dl)}.`, actions: [] });
+    }
+  }
+  return list.filter((x) => x.at > +n).sort((a, b) => a.at - b.at).slice(0, 60);
+}
+function scheduleNotifications() {
+  if (!A || !A.scheduleAll) return;
+  try { A.scheduleAll(JSON.stringify(buildSchedule())); } catch (e) {}
+}
+/** Pagamenti segnati con i pulsanti della notifica mentre l'app era chiusa. */
+function applyPending() {
+  if (!A || !A.takePending) return;
+  let list = [];
+  try { list = JSON.parse(A.takePending() || "[]"); } catch (e) {}
+  if (!list.length) return;
+  for (const it of list) { S.payments[it.m] = S.payments[it.m] || {}; if (!S.payments[it.m][`${it.s}|${it.p}`]) S.payments[it.m][`${it.s}|${it.p}`] = { on: new Date(it.at || Date.now()).toISOString(), amount: it.a }; }
+  save(); render(); toast(list.length === 1 ? "Pagamento segnato dalla notifica" : `${list.length} pagamenti segnati dalla notifica`);
+}
+
+/* ==========================================================================
+   Interfaccia
+   ========================================================================== */
+const TABS = [["mese", "Questo mese"], ["abbonamenti", "Abbonamenti"], ["statistiche", "Statistiche"], ["promemoria", "Promemoria"], ["impostazioni", "Impostazioni"]];
+let tab = "mese";
+const view = { y: now().getFullYear(), m: now().getMonth() };
+const remView = { y: now().getFullYear(), m: now().getMonth() };
+
+function renderTabbar() {
+  const nav = $("tabbar"); nav.textContent = "";
+  for (const [id, label] of TABS) {
+    const b = el("button", tab === id ? "on" : null); b.innerHTML = icon(id) + `<span>${label}</span>`;
+    b.setAttribute("aria-current", tab === id ? "page" : "false");
+    b.addEventListener("click", () => { tab = id; render(); $("view").scrollTop = 0; });
+    nav.append(b);
+  }
+}
+function setTop(title, ...buttons) {
+  const top = $("top"); top.textContent = "";
+  top.append(el("h1", null, title), ...buttons);
+}
+function topBtn(text, onClick, big, label) { const b = el("button", "iconbtn" + (big ? " big" : ""), text); if (label) b.setAttribute("aria-label", label); b.addEventListener("click", onClick); return b; }
+function render() {
+  applyTheme(); renderTabbar();
+  const v = $("view"); v.textContent = "";
+  ({ mese: renderMonth, abbonamenti: renderSubs, statistiche: renderStats, promemoria: renderReminders, impostazioni: renderSettings })[tab](v);
+}
+function homeHint(v) {
+  if (A || STANDALONE || !IS_IOS || S.settings.hideHomeHint) return;
+  const h = el("div", "hint");
+  h.innerHTML = `<span>Per averla come un'app: tocca <b>Condividi</b> (il quadrato con la freccia) e poi <b>Aggiungi alla schermata Home</b>.</span>`;
+  const x = el("button", null, "✕"); x.setAttribute("aria-label", "Chiudi"); x.addEventListener("click", () => { S.settings.hideHomeHint = true; save(); render(); });
+  h.append(x); v.append(h);
+}
+function emptyState(v, title, text, actions) {
+  const e = el("div", "empty"); e.append(el("b", null, title), el("span", null, text));
+  for (const [label, fn, ghost] of actions) { const b = el("button", "btn" + (ghost ? " ghost" : ""), label); b.addEventListener("click", fn); e.append(b); }
+  v.append(e);
+}
+
+// ---------- Questo mese ----------
+function renderMonth(v) {
+  const { y, m } = view, key = mkey(y, m);
+  setTop(`${cap(MONTHS[m])} ${y}`,
+    topBtn("‹", () => { const d = new Date(y, m - 1, 1); view.y = d.getFullYear(); view.m = d.getMonth(); render(); }, true, "Mese precedente"),
+    topBtn("Oggi", () => { view.y = now().getFullYear(); view.m = now().getMonth(); render(); }),
+    topBtn("›", () => { const d = new Date(y, m + 1, 1); view.y = d.getFullYear(); view.m = d.getMonth(); render(); }, true, "Mese successivo"));
+  homeHint(v);
+  if (!S.subs.length) {
+    emptyState(v, "Benvenuto!", "Aggiungi gli abbonamenti che dividi con altre persone: l'app ti ricorda chi deve pagare e quanto.",
+      [["Aggiungi il primo abbonamento", () => { tab = "abbonamenti"; render(); editSub(null); }], ["Prova con dati di esempio", loadSample, true]]);
+    return;
+  }
+  const people = peopleFor(y, m);
+  const all = people.flatMap((p) => p.items);
+  const total = all.reduce((a, i) => a + i.share, 0), paid = all.filter((i) => i.paid).reduce((a, i) => a + i.share, 0);
+  const lateCount = people.filter((p) => p.items.some((i) => i.late > 0)).length;
+  const sum = el("div", "group");
+  sum.innerHTML = `<div class="stats"><div><small>Da incassare</small><b>${chf(total)}</b></div><div><small>Incassato</small><b style="color:var(--ok)">${chf(paid)}</b></div><div><small>Mancante</small><b style="color:var(--warn)">${chf(total - paid)}</b></div></div>
+    <div class="bar"><i style="width:${total ? paid / total * 100 : 0}%"></i></div>${lateCount ? `<div class="latebar">${lateCount === 1 ? "1 persona è in ritardo" : lateCount + " persone sono in ritardo"}</div>` : ""}`;
+  v.append(sum);
+  if (!people.length) { v.append(el("div", "secfoot", "Questo mese nessuno deve pagare niente.")); return; }
+
+  for (const p of people) {
+    const owed = p.items.filter((i) => !i.paid), owedSum = owed.reduce((a, i) => a + i.share, 0), late = Math.max(0, ...owed.map((i) => i.late));
+    const head = el("div", "sechead"); head.append(el("span", null, p.name));
+    head.append(el("span", "st " + (!owedSum ? "ok" : late ? "late" : "due"), !owedSum ? "Pagato" : late ? `in ritardo di ${late} ${late === 1 ? "giorno" : "giorni"} · ${chf(owedSum)}` : `Deve ${chf(owedSum)}`));
+    v.append(head);
+    const g = el("div", "group");
+    for (const it of p.items) {
+      const row = el("div", "row");
+      const ck = el("button", "ck" + (it.paid ? " on" : ""), it.paid ? "✓" : "");
+      ck.setAttribute("role", "checkbox"); ck.setAttribute("aria-checked", !!it.paid); ck.setAttribute("aria-label", `${it.sub.name} pagato`);
+      ck.addEventListener("click", () => { setPaid(y, m, it.sub, p.key, it.share, !it.paid); if (A && A.vibrate) A.vibrate(); save(); render(); });
+      const gr = el("div", "grow");
+      gr.append(el("div", it.paid ? "paidname" : null, it.sub.name));
+      if (it.paid) gr.append(el("div", "sub ok", `Pagato il ${fmtShort(new Date(it.paid.on))}`));
+      else if (it.late) gr.append(el("div", "sub late", `Scaduto il ${fmtShort(it.due)} · in ritardo di ${it.late} ${it.late === 1 ? "giorno" : "giorni"}`));
+      else gr.append(el("div", "sub", `Da pagare entro ${fmtShort(it.due)}`));
+      if ((it.sub.cycle || 1) > 1) gr.append(el("div", "sub", it.sub.split === "rate" ? `Rata mensile (si paga ${PER[it.sub.cycle]})` : "Rinnovo: quota intera"));
+      const nk = keyOf(new Date(y, m + 1, 1)), h = (it.sub.history || []).find((c) => c.from === nk);
+      if (h) { const ns = h.members.find((x) => personKey(x.name) === p.key); const nv = ns ? dueShare(it.sub, ns.share, (m + 1) % 12 + 1) : 0; if (Math.abs(nv - it.share) > .004 && !it.paid) gr.append(el("div", "change", `Da ${MONTHS[(m + 1) % 12]}: ${chf(nv)} (nuovo prezzo)`)); }
+      const t = el("span"); t.innerHTML = tile(it.sub.cat);
+      row.append(ck, t.firstChild, gr, el("span", "amt" + (it.paid ? " paid" : ""), chf(it.share)));
+      g.append(row);
+    }
+    if (owed.length) {
+      const text = messageFor(p, owed, y, m), phone = S.contacts[p.key] || "";
+      const acts = el("div", "acts");
+      const wa = el("button", "act", "WhatsApp"); wa.addEventListener("click", () => openUrl(`https://wa.me/${intlDigits(phone)}?text=${encodeURIComponent(text)}`));
+      const sms = el("button", "act", "SMS"); sms.addEventListener("click", () => openUrl(`sms:${phone ? "+" + intlDigits(phone) : ""}${IS_IOS ? "&" : "?"}body=${encodeURIComponent(text)}`));
+      const cp = el("button", "act", "Copia"); cp.addEventListener("click", () => copyText(text));
+      acts.append(wa, sms, cp); g.append(acts);
+      const allRow = el("div", "row tap"); allRow.append(el("span", "grow link", "Segna tutto pagato"));
+      allRow.addEventListener("click", () => { owed.forEach((i) => setPaid(y, m, i.sub, p.key, i.share, true)); save(); render(); });
+      g.append(allRow);
+    }
+    const pr = el("div", "row");
+    const lab = el("label", null, "Numero"); lab.htmlFor = "ph-" + p.key;
+    const inp = el("input", "in link"); inp.type = "tel"; inp.id = "ph-" + p.key; inp.placeholder = `Aggiungi il numero di ${p.name}`; inp.value = S.contacts[p.key] || ""; inp.inputMode = "tel";
+    inp.addEventListener("change", () => { const vv = inp.value.trim(); if (vv) S.contacts[p.key] = vv; else delete S.contacts[p.key]; save(); render(); });
+    pr.append(lab, inp); g.append(pr);
+    v.append(g);
+  }
+}
+
+// ---------- Abbonamenti ----------
+function renderSubs(v) {
+  setTop("Abbonamenti", topBtn("+", () => editSub(null), true, "Nuovo abbonamento"));
+  if (!S.subs.length) { emptyState(v, "Nessun abbonamento", "Aggiungi Spotify, Netflix o qualsiasi abbonamento che dividi.", [["Aggiungi abbonamento", () => editSub(null)], ["Prova con dati di esempio", loadSample, true]]); return; }
+  const g = el("div", "group"); let tot = 0, mine = 0; const k = keyOf(now());
+  for (const s of [...S.subs].sort((a, b) => a.name.localeCompare(b.name))) {
+    const t = terms(s, k), my = myShareOf(t); tot += monthly(s, t.total); mine += monthly(s, my);
+    const row = el("div", "row tap"); const tl = el("span"); tl.innerHTML = tile(s.cat);
+    const gr = el("div", "grow");
+    gr.append(el("div", null, s.name)); gr.firstChild.style.fontWeight = "700";
+    gr.append(el("div", "sub", t.members.length ? `Con ${t.members.map((x) => x.name).join(", ")} · tua quota ${chf(my)}` : "Solo tu"));
+    if ((s.cycle || 1) > 1) {
+      const rn = (() => { for (let i = 0; i < 13; i++) { const d = new Date(now().getFullYear(), now().getMonth() + i, 1); if (isRenewal(s, d.getMonth() + 1)) return MONTHS[d.getMonth()]; } return ""; })();
+      gr.append(el("div", "sub", s.split === "rate" ? `≈ ${chf(monthly(s, t.total))} al mese · rate mensili · rinnovo a ${rn}` : `Si chiede tutto al rinnovo · ${rn}`));
+    }
+    if (inTrial(s)) gr.append(el("div", "change", `Prova gratuita fino a ${fmtShort(new Date(s.trialEnd))}`));
+    else if (s.renewalAlert) { const c = nextCharge(s); if (c) gr.append(el("div", "sub", `Rinnovo ${fmtShort(c)} · avviso ${fmtShort(alertDate(c, s.notice, s.alertDays || 3))}`)); }
+    const fut = (s.history || []).filter((c) => c.from > k).sort((a, b) => (a.from < b.from ? -1 : 1))[0];
+    if (fut) gr.append(el("div", "change", `Da ${MONTHS[+fut.from.slice(5) - 1]} ${fut.from.slice(0, 4)}: ${chf(fut.total)}`));
+    const right = el("div", "amt"); right.append(el("span", null, chf(t.total))); if ((s.cycle || 1) > 1) right.append(el("span", "per", PER[s.cycle]));
+    row.append(tl.firstChild, gr, right);
+    row.addEventListener("click", () => editSub(s));
+    g.append(row);
+  }
+  v.append(g, el("div", "secfoot", `Totale ≈ ${chf(tot)} al mese. La tua parte: ≈ ${chf(mine)} al mese, ${chf(mine * 12)} all'anno.`));
+}
+
+// ---------- foglio a schermo intero ----------
+let sheetSave = null;
+function openSheet(title, build, onSave, saveLabel = "Salva") {
+  $("shTitle").textContent = title; $("shSave").textContent = saveLabel;
+  const body = $("shBody"); body.textContent = ""; body.scrollTop = 0;
+  sheetSave = onSave; build(body); $("sheet").hidden = false;
+}
+function closeSheet() { $("sheet").hidden = true; sheetSave = null; render(); }
+$("shCancel").addEventListener("click", closeSheet);
+$("shSave").addEventListener("click", () => { if (sheetSave && sheetSave() !== false) closeSheet(); });
+const setSaveEnabled = (ok) => { $("shSave").disabled = !ok; };
+
+function editSub(sub) {
+  const isNew = !sub;
+  const k = keyOf(now());
+  const cur = sub ? terms(sub, "9999-12") : null; // ultimi valori salvati
+  const d = sub ? JSON.parse(JSON.stringify({ ...sub, total: cur.total, members: cur.members })) :
+    { id: uid(), name: "", cat: "altro", total: 0, cycle: 1, renewal: now().getMonth() + 1, split: "rate", members: [{ name: "", share: 0 }], history: [], createdAt: new Date().toISOString(), billingDay: 0, renewalAlert: false, alertDays: 3, notice: 0, trialEnd: null };
+  let catTouched = !isNew, eff = 0, delConfirm = false;
+  if (sub && Object.keys(S.payments[k] || {}).some((x) => x.startsWith(sub.id + "|"))) eff = 1;
+  const cleanMembers = () => d.members.map((x) => ({ name: x.name.trim(), share: round2(x.share) })).filter((x) => x.name && x.share > 0);
+  const termsChanged = () => { if (isNew) return false; const a = JSON.stringify({ t: round2(cur.total), m: cur.members.map((x) => [personKey(x.name), round2(x.share)]) }); const b = JSON.stringify({ t: round2(d.total), m: cleanMembers().map((x) => [personKey(x.name), x.share]) }); return a !== b; };
+  const dup = () => { const seen = new Set(); for (const x of cleanMembers()) { const kk = personKey(x.name); if (seen.has(kk)) return x.name; seen.add(kk); } return null; };
+
+  openSheet(isNew ? "Nuovo abbonamento" : "Modifica", (body) => {
+    const draw = () => {
+      body.textContent = "";
+      // nome e costo
+      const g1 = el("div", "group");
+      const r1 = el("div", "row"); const tl = el("span"); tl.innerHTML = tile(d.cat);
+      const nm = el("input", "in left"); nm.placeholder = "Nome (es. Spotify Family)"; nm.value = d.name; nm.id = "fName"; nm.setAttribute("aria-label", "Nome");
+      nm.addEventListener("input", () => { d.name = nm.value; if (!catTouched) { const c = guessCat(d.name); if (c !== d.cat) { d.cat = c; tl.innerHTML = tile(c); body.querySelectorAll(".cat").forEach((b) => b.classList.toggle("sel", b.dataset.c === c)); } } validate(); });
+      tl.style.display = "contents"; r1.append(tl, nm); g1.append(r1);
+      const r2 = el("div", "row"); const seg = el("div", "seg");
+      for (const [c, lab] of [[1, "Mese"], [3, "3 mesi"], [6, "6 mesi"], [12, "Anno"]]) { const b = el("button", d.cycle === c ? "sel" : null, lab); b.addEventListener("click", () => { d.cycle = c; draw(); }); seg.append(b); }
+      r2.append(seg); g1.append(r2);
+      const r3 = el("div", "row"); r3.append(el("span", "grow", COST[d.cycle]));
+      const tot = el("input", "in num"); tot.inputMode = "decimal"; tot.placeholder = "0.00"; tot.value = d.total ? d.total.toFixed(2) : ""; tot.style.maxWidth = "110px"; tot.setAttribute("aria-label", "Costo");
+      tot.addEventListener("input", () => { d.total = parseAmount(tot.value); updateMine(); validate(); });
+      r3.append(tot, el("span", "sub", "CHF")); g1.append(r3);
+      body.append(g1);
+      if (d.cycle > 1) {
+        body.append(el("div", "sechead", "Rinnovo"));
+        const g = el("div", "group");
+        const r = el("div", "row"); r.append(el("span", "grow", "Mese del rinnovo"));
+        const sel = el("select", "in"); MONTHS.forEach((mm, i) => { const o = new Option(cap(mm), i + 1); if (d.renewal === i + 1) o.selected = true; sel.append(o); });
+        sel.addEventListener("change", () => { d.renewal = +sel.value; draw(); }); r.append(sel); g.append(r);
+        const r4 = el("div", "row"); const s2 = el("div", "seg");
+        for (const [val, lab] of [["rate", "Una rata al mese"], ["unica", "Tutto al rinnovo"]]) { const b = el("button", d.split === val ? "sel" : null, lab); b.addEventListener("click", () => { d.split = val; draw(); }); s2.append(b); }
+        r4.append(s2); g.append(r4); body.append(g);
+        body.append(el("div", "secfoot", d.split === "rate" ? "La quota viene divisa in rate mensili, arrotondate ai 5 centesimi; l'ultima rata del periodo corregge la differenza." : `Nel mese del rinnovo (${MONTHS[d.renewal - 1]}) ognuno paga la quota intera; negli altri mesi niente.`));
+      }
+      // tipo
+      body.append(el("div", "sechead", "Tipo"));
+      const gc = el("div", "group"); const cats = el("div", "cats");
+      for (const [c, info] of Object.entries(CATS)) {
+        const b = el("button", "cat" + (d.cat === c ? " sel" : "")); b.dataset.c = c; b.innerHTML = tile(c) + `<span>${info.name}</span>`;
+        b.addEventListener("click", () => { d.cat = c; catTouched = true; draw(); }); cats.append(b);
+      }
+      gc.append(cats); body.append(gc);
+      // persone
+      body.append(el("div", "sechead", d.cycle === 1 ? "Con chi lo dividi" : `Con chi lo dividi (quota ${PER[d.cycle]})`));
+      const gm = el("div", "group");
+      d.members.forEach((mem, i) => {
+        const r = el("div", "row");
+        const n1 = el("input", "in left box"); n1.placeholder = "Nome"; n1.value = mem.name; n1.setAttribute("aria-label", "Nome persona");
+        n1.addEventListener("input", () => { mem.name = n1.value; updateMine(); validate(); });
+        const s1 = el("input", "in num box"); s1.inputMode = "decimal"; s1.placeholder = "0.00"; s1.value = mem.share ? mem.share.toFixed(2) : ""; s1.style.maxWidth = "88px"; s1.setAttribute("aria-label", "Quota");
+        s1.addEventListener("input", () => { mem.share = parseAmount(s1.value); updateMine(); validate(); });
+        const x = el("button", "iconbtn", "✕"); x.setAttribute("aria-label", "Rimuovi persona"); x.addEventListener("click", () => { d.members.splice(i, 1); draw(); });
+        r.append(n1, s1, x); gm.append(r);
+      });
+      const add = el("div", "row tap"); add.append(el("span", "grow link", "+ Aggiungi persona")); add.addEventListener("click", () => { d.members.push({ name: "", share: 0 }); draw(); }); gm.append(add);
+      const eq = el("div", "row tap"); eq.append(el("span", "grow link", "Dividi in parti uguali (te incluso)"));
+      eq.addEventListener("click", () => { const named = d.members.filter((x) => x.name.trim()); if (!d.total || !named.length) { toast("Inserisci prima il costo e almeno un nome"); return; } const each = rappen(d.total / (named.length + 1)); named.forEach((x) => (x.share = each)); draw(); });
+      gm.append(eq); body.append(gm);
+      const mineEl = el("div", "secfoot"); mineEl.id = "mineNote"; body.append(mineEl);
+      // da quando vale il cambio
+      const effBox = el("div"); effBox.id = "effBox"; body.append(effBox);
+      // rinnovo e disdetta
+      body.append(el("div", "sechead", "Rinnovo e disdetta"));
+      const gr = el("div", "group");
+      const rd = el("div", "row"); rd.append(el("span", "grow", "Giorno di addebito"));
+      const sd = el("select", "in"); sd.append(new Option("Non lo so", 0)); for (let i = 1; i <= 31; i++) sd.append(new Option(`Il ${i}`, i)); sd.value = d.billingDay || 0;
+      sd.addEventListener("change", () => { d.billingDay = +sd.value; draw(); }); rd.append(sd); gr.append(rd);
+      const rt = el("div", "row"); const lt = el("label", "grow", "È una prova gratuita"); lt.htmlFor = "swTrial";
+      const st = el("input", "switch"); st.type = "checkbox"; st.id = "swTrial"; st.checked = !!d.trialEnd;
+      st.addEventListener("change", () => { d.trialEnd = st.checked ? new Date(now().getFullYear(), now().getMonth(), now().getDate() + 30).toISOString() : null; draw(); });
+      rt.append(lt, st); gr.append(rt);
+      if (d.trialEnd) {
+        const re = el("div", "row"); const le = el("label", "grow", "La prova finisce il"); le.htmlFor = "trialEnd";
+        const de = el("input", "in link"); de.type = "date"; de.id = "trialEnd"; const te = new Date(d.trialEnd); de.value = `${te.getFullYear()}-${two(te.getMonth() + 1)}-${two(te.getDate())}`;
+        de.addEventListener("change", () => { if (de.value) { const [yy, mm, dd] = de.value.split("-").map(Number); d.trialEnd = new Date(yy, mm - 1, dd).toISOString(); draw(); } });
+        re.append(le, de); gr.append(re);
+      }
+      const ra = el("div", "row"); const la = el("label", "grow", d.trialEnd ? "Avvisami prima della fine" : "Avvisami prima del rinnovo"); la.htmlFor = "swAlert";
+      const sa = el("input", "switch"); sa.type = "checkbox"; sa.id = "swAlert"; sa.checked = d.renewalAlert || !!d.trialEnd; sa.disabled = !!d.trialEnd;
+      sa.addEventListener("change", () => { d.renewalAlert = sa.checked; draw(); }); ra.append(la, sa); gr.append(ra);
+      if (d.renewalAlert || d.trialEnd) {
+        const rs = el("div", "row"); rs.append(el("span", "grow", `${d.alertDays} ${d.alertDays === 1 ? "giorno" : "giorni"} prima`));
+        const stp = el("div", "stepper"); const mi = el("button", null, "−"), pl = el("button", null, "+");
+        mi.setAttribute("aria-label", "Un giorno in meno"); pl.setAttribute("aria-label", "Un giorno in più");
+        mi.addEventListener("click", () => { d.alertDays = Math.max(1, d.alertDays - 1); draw(); }); pl.addEventListener("click", () => { d.alertDays = Math.min(30, d.alertDays + 1); draw(); });
+        stp.append(mi, el("span", "num", d.alertDays), pl); rs.append(stp); gr.append(rs);
+      }
+      if (!d.trialEnd) {
+        const rn = el("div", "row"); rn.append(el("span", "grow", "Preavviso di disdetta"));
+        const sn = el("select", "in"); [[0, "Nessuno"], [7, "7 giorni"], [14, "14 giorni"], [30, "1 mese"], [60, "2 mesi"], [90, "3 mesi"]].forEach(([vv, lab]) => sn.append(new Option(lab, vv))); sn.value = d.notice || 0;
+        sn.addEventListener("change", () => { d.notice = +sn.value; draw(); }); rn.append(sn); gr.append(rn);
+      }
+      body.append(gr);
+      let summary;
+      if (d.trialEnd) { const te = new Date(d.trialEnd), al = new Date(te.getFullYear(), te.getMonth(), te.getDate() - d.alertDays); summary = `La prova finisce ${fmtDate(te)}. Ti avviso ${fmtDate(al)}, così puoi disdire se non ti interessa.`; }
+      else { const c = nextCharge(d); summary = !c ? "Indica il giorno di addebito: serve per avvisarti prima del rinnovo." : `Prossimo rinnovo: ${fmtDate(c)}. Per disdire: entro ${fmtDate(cancelDeadline(c, d.notice))}.` + (d.renewalAlert ? ` Ti avviso ${fmtDate(alertDate(c, d.notice, d.alertDays))}.` : ""); }
+      body.append(el("div", "secfoot", summary));
+      if (!isNew) {
+        const gd = el("div", "group"); gd.style.marginTop = "18px";
+        const rdl = el("div", "row tap"); const lbl = el("span", "grow danger", delConfirm ? "Tocca di nuovo per eliminare" : "Elimina abbonamento");
+        rdl.append(lbl); rdl.addEventListener("click", () => {
+          if (!delConfirm) { delConfirm = true; lbl.textContent = "Tocca di nuovo per eliminare"; return; }
+          S.subs = S.subs.filter((x) => x.id !== sub.id);
+          for (const mk in S.payments) for (const pk in S.payments[mk]) if (pk.startsWith(sub.id + "|")) delete S.payments[mk][pk];
+          S.reminders.forEach((r) => (r.subs = r.subs.filter((x) => x !== sub.id)));
+          save(); closeSheet(); toast("Abbonamento eliminato");
+        });
+        gd.append(rdl); body.append(gd);
+      }
+      updateMine(); validate();
+    };
+    const updateMine = () => {
+      const others = d.members.reduce((a, x) => a + (x.share || 0), 0), mine = d.total - others, dp = dup();
+      const n = $("mineNote"); if (n) { n.textContent = dp ? `${dp} compare due volte: usa nomi diversi.` : mine < -0.001 ? `Le quote superano il costo di ${chf(-mine)}.` : `La tua quota: ${chf(mine)} ${PER[d.cycle]}.`; n.style.color = dp || mine < -0.001 ? "var(--late)" : ""; }
+      const box = $("effBox"); if (!box) return; box.textContent = "";
+      if (termsChanged()) {
+        box.append(el("div", "sechead", "Da quando vale il cambio"));
+        const g = el("div", "group"), r = el("div", "row"); r.append(el("span", "grow", "Vale da"));
+        const sel = el("select", "in");
+        for (let o = -6; o <= 12; o++) { const dd = new Date(now().getFullYear(), now().getMonth() + o, 1); const op = new Option(o === 0 ? "Questo mese" : o === 1 ? "Il prossimo mese" : `${cap(MONTHS[dd.getMonth()])} ${dd.getFullYear()}`, o); if (o === eff) op.selected = true; sel.append(op); }
+        sel.addEventListener("change", () => { eff = +sel.value; updateMine(); });
+        r.append(sel); g.append(r); box.append(g);
+        const from = new Date(now().getFullYear(), now().getMonth() + eff, 1), before = terms(sub, keyOf(new Date(from.getFullYear(), from.getMonth() - 1, 1)));
+        box.append(el("div", "secfoot", `Fino a ${MONTHS[(from.getMonth() + 11) % 12]} resta ${chf(before.total)}; da ${MONTHS[from.getMonth()]} ${from.getFullYear()} diventa ${chf(d.total)}. I pagamenti già segnati non cambiano.`));
+      }
+    };
+    const validate = () => setSaveEnabled(d.name.trim() && d.total > 0 && !dup());
+    draw();
+  }, () => {
+    const members = cleanMembers();
+    if (!d.name.trim() || !(d.total > 0) || dup()) return false;
+    const out = { ...d, name: d.name.trim(), total: round2(d.total), members };
+    if (!isNew && termsChanged()) {
+      const hist = (sub.history || []).slice();
+      if (!hist.length) hist.push({ from: "0000-01", total: cur.total, members: cur.members });
+      const from = keyOf(new Date(now().getFullYear(), now().getMonth() + eff, 1));
+      out.history = hist.filter((c) => c.from < from || c.from === "0000-01");
+      out.history.push({ from, total: out.total, members });
+    } else if (!isNew) out.history = sub.history || [];
+    if (isNew) S.subs.push(out); else S.subs[S.subs.findIndex((x) => x.id === sub.id)] = out;
+    save(); toast(isNew ? "Abbonamento aggiunto" : "Salvato");
+  });
+}
+
+// ---------- Statistiche ----------
+function renderStats(v) {
+  setTop("Statistiche");
+  if (!S.subs.length) { emptyState(v, "Ancora niente da mostrare", "Aggiungi un abbonamento: qui vedrai quanto spendi e chi paga puntuale.", [["Prova con dati di esempio", loadSample, true]]); return; }
+  const k = keyOf(now()); let mine = 0, all = 0; const byCat = new Map();
+  for (const s of S.subs) { const t = terms(s, k); mine += monthly(s, myShareOf(t)); all += monthly(s, t.total); byCat.set(s.cat, (byCat.get(s.cat) || 0) + monthly(s, myShareOf(t))); }
+  const g1 = el("div", "group"); g1.innerHTML = `<div class="kpis"><div><small>La tua parte</small><b>${chf(mine)}</b><small>al mese</small></div><div><small>All'anno</small><b>${chf(mine * 12)}</b><small>la tua parte</small></div><div><small>Risparmi</small><b>${chf((all - mine) * 12)}</b><small>all'anno dividendo</small></div></div>`;
+  v.append(g1, el("div", "secfoot", `In tutto gli abbonamenti costano ≈ ${chf(all)} al mese.`));
+  // ciambella
+  const slices = [...byCat].filter((x) => x[1] > .004).sort((a, b) => b[1] - a[1]);
+  v.append(el("div", "sechead", "La tua spesa per tipo"));
+  const g2 = el("div", "group"), dn = el("div", "donut");
+  const sum = slices.reduce((a, x) => a + x[1], 0) || 1, R = 40, C = 2 * Math.PI * R; let off = 0, arcs = "";
+  for (const [c, val] of slices) { const len = val / sum * C; arcs += `<circle cx="58" cy="58" r="${R}" fill="none" stroke="${CATS[c].color}" stroke-width="16" stroke-dasharray="${Math.max(0, len - 1.5)} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 58 58)"/>`; off += len; }
+  dn.innerHTML = `<svg viewBox="0 0 116 116" role="img" aria-label="La tua spesa per tipo"><circle cx="58" cy="58" r="${R}" fill="none" stroke="var(--bg)" stroke-width="16"/>${arcs}<text x="58" y="56" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">${mine.toFixed(2)}</text><text x="58" y="70" text-anchor="middle" font-size="8.5" fill="var(--ink2)">CHF al mese</text></svg>`;
+  const lg = el("div", "legend"); for (const [c, val] of slices) lg.insertAdjacentHTML("beforeend", `<div><i style="background:${CATS[c].color}"></i><span>${CATS[c].name}</span><em>${chf(val)}</em></div>`);
+  if (!slices.length) lg.append(el("span", "sub", "La tua parte è zero: paghi tutto con gli altri."));
+  dn.append(lg); g2.append(dn); v.append(g2);
+  // barre 6 mesi
+  const months = []; for (let i = 5; i >= 0; i--) { const d = new Date(now().getFullYear(), now().getMonth() - i, 1); months.push([d.getFullYear(), d.getMonth()]); }
+  const data = months.map(([y, m]) => { const it = peopleFor(y, m).flatMap((p) => p.items); const p = it.filter((i) => i.paid).reduce((a, i) => a + i.share, 0); return { m, paid: p, miss: it.reduce((a, i) => a + i.share, 0) - p }; });
+  const maxV = Math.max(...data.map((d) => d.paid + d.miss), 1), step = maxV > 160 ? 80 : maxV > 80 ? 40 : 20, top = Math.ceil(maxV / step) * step;
+  const W = 300, H = 150, L = 30, B = 20, T = 8, bw = (W - L) / data.length;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Incassi degli ultimi 6 mesi">`;
+  for (let val = 0; val <= top; val += step) { const yy = H - B - (val / top) * (H - B - T); svg += `<line x1="${L}" x2="${W}" y1="${yy}" y2="${yy}" stroke="var(--sep)" stroke-dasharray="3 3" stroke-width=".6"/><text x="${L - 5}" y="${yy + 3}" text-anchor="end" font-size="8.5" fill="var(--ink2)">${val}</text>`; }
+  data.forEach((d, i) => { const x = L + i * bw + bw * .2, w = bw * .6, hp = d.paid / top * (H - B - T), hm = d.miss / top * (H - B - T), base = H - B;
+    svg += `<rect x="${x}" y="${base - hp}" width="${w}" height="${hp}" rx="2" fill="var(--accent)"/>`;
+    if (hm > .5) svg += `<rect x="${x}" y="${base - hp - hm}" width="${w}" height="${hm}" rx="2" fill="color-mix(in srgb, var(--warn) 55%, transparent)"/>`;
+    svg += `<text x="${x + w / 2}" y="${H - 6}" text-anchor="middle" font-size="9" fill="var(--ink2)">${MONTHS[d.m].slice(0, 3)}</text>`; });
+  v.append(el("div", "sechead", "Incassi degli ultimi 6 mesi (CHF)"));
+  const g3 = el("div", "group"); const ch = el("div", "chart"); ch.innerHTML = svg + "</svg>"; g3.append(ch);
+  g3.insertAdjacentHTML("beforeend", `<div class="key"><span><i style="background:var(--accent)"></i>Incassato</span><span><i style="background:color-mix(in srgb, var(--warn) 55%, transparent)"></i>Mancante</span></div>`);
+  v.append(g3);
+  // puntualità
+  const st = new Map();
+  for (const [y, m] of months) for (const p of peopleFor(y, m)) for (const i of p.items) {
+    const e = st.get(p.key) || { name: p.name, delays: [], unpaid: 0 };
+    if (i.paid) e.delays.push(Math.max(0, daysBetween(i.due, new Date(i.paid.on)))); else if (i.due < now()) e.unpaid++;
+    st.set(p.key, e);
+  }
+  if (st.size) {
+    v.append(el("div", "sechead", "Puntualità"));
+    const g4 = el("div", "group");
+    [...st.values()].map((e) => ({ ...e, avg: e.delays.length ? e.delays.reduce((a, b) => a + b, 0) / e.delays.length : 0 }))
+      .sort((a, b) => a.unpaid - b.unpaid || a.avg - b.avg).forEach((x) => {
+        const r = el("div", "row"), gg = el("div", "grow"); gg.append(el("div", null, x.name)); gg.firstChild.style.fontWeight = "700";
+        gg.append(el("div", "sub" + (x.unpaid ? " late" : ""), `${x.delays.length} pagamenti` + (x.unpaid ? ` · ${x.unpaid} scaduti non pagati` : "")));
+        const dd = Math.round(x.avg);
+        r.append(gg, el("span", "badge " + (!x.delays.length ? "mid" : x.avg < 1 ? "ok" : x.avg > 7 ? "bad" : "mid"), !x.delays.length ? "—" : x.avg < 1 ? "Puntuale" : `in media ${dd} ${dd === 1 ? "giorno" : "giorni"} dopo`));
+        g4.append(r);
+      });
+    v.append(g4, el("div", "secfoot", "Il ritardo si conta dalla scadenza: il giorno del primo promemoria del mese."));
+  }
+  // più cari
+  v.append(el("div", "sechead", "Più cari (al mese)"));
+  const g5 = el("div", "group"), ranked = S.subs.map((s) => ({ s, val: monthly(s, terms(s, k).total) })).sort((a, b) => b.val - a.val).slice(0, 5), mx = ranked[0] ? ranked[0].val : 1;
+  for (const { s, val } of ranked) { const r = el("div", "row"); r.innerHTML = tile(s.cat) + `<div class="grow"><div style="display:flex;justify-content:space-between;gap:8px"><span>${esc(s.name)}</span><span class="num">${chf(val)}</span></div><div class="hbar" style="width:${Math.max(4, val / mx * 100)}%;background:${(CATS[s.cat] || CATS.altro).color}"></div></div>`; g5.append(r); }
+  v.append(g5);
+}
+
+// ---------- calendario (promemoria) ----------
+function calendar(container, cv, opts) {
+  const { y, m } = cv;
+  const wrap = el("div", "cal");
+  const head = el("div", "calhead");
+  const pv = el("button", null, "‹"), nx = el("button", null, "›"); pv.setAttribute("aria-label", "Mese precedente"); nx.setAttribute("aria-label", "Mese successivo");
+  pv.addEventListener("click", () => { const d = new Date(y, m - 1, 1); cv.y = d.getFullYear(); cv.m = d.getMonth(); opts.redraw(); });
+  nx.addEventListener("click", () => { const d = new Date(y, m + 1, 1); cv.y = d.getFullYear(); cv.m = d.getMonth(); opts.redraw(); });
+  head.append(pv, el("b", null, `${cap(MONTHS[m])} ${y}`), nx);
+  const wk = el("div", "wk"); "LMMGVSD".split("").forEach((c) => wk.append(el("span", null, c)));
+  const days = el("div", "days");
+  const offset = (new Date(y, m, 1).getDay() + 6) % 7; for (let i = 0; i < offset; i++) days.append(el("span"));
+  const n = daysIn(y, m);
+  for (let d = 1; d <= n; d++) {
+    const c = el(opts.onPick ? "button" : "span", "d", String(d)); const date = new Date(y, m, d), wd = date.getDay();
+    if (wd === 0 || wd === 6) c.classList.add("we"); if (sameDay(date, now())) c.classList.add("today");
+    const mk = opts.mark(d, n); mk.forEach((x) => c.classList.add(x));
+    if (opts.onPick) { c.setAttribute("aria-label", `${d} ${MONTHS[m]}`); c.addEventListener("click", () => opts.onPick(d)); }
+    days.append(c);
+  }
+  if (opts.ghostTo && opts.ghostTo > n) for (let d = n + 1; d <= opts.ghostTo; d++) days.append(el("span", "d ghost", String(d)));
+  wrap.append(head, wk, days);
+  if (opts.extra) opts.extra(wrap);
+  container.append(wrap);
+}
+
+// ---------- Promemoria ----------
+function renderReminders(v) {
+  setTop("Promemoria", topBtn("+", () => editReminder(null), true, "Nuovo promemoria"));
+  if (!A) v.append(el("div", "hint", "Nella versione web le notifiche non sono disponibili: i promemoria decidono le scadenze e i ritardi, e li vedi aprendo l'app."));
+  if (A && A.notificationsAllowed && !A.notificationsAllowed()) {
+    const g = el("div", "group"), r = el("div", "row tap"); r.append(el("span", "grow link", "Attiva le notifiche"));
+    r.addEventListener("click", () => { A.requestNotifications(); }); g.append(r);
+    v.append(g, el("div", "secfoot", "Serve il tuo permesso perché l'app possa avvisarti nei giorni scelti."));
+  }
+  if (!S.reminders.length) {
+    emptyState(v, "Nessun promemoria", "Scegli tu il giorno: uno solo per tutti gli abbonamenti, oppure uno diverso per ogni rinnovo.", [["Promemoria il 1° del mese alle 09:00", () => {
+      S.reminders.push({ id: uid(), day: 1, h: 9, m: 0, we: "no", rep: "mese", onceY: now().getFullYear(), onceM: now().getMonth(), endMode: "mai", endCount: 12, endDate: null, start: new Date().toISOString(), label: "", all: true, subs: [], on: true });
+      save(); render(); if (A && A.requestNotifications) A.requestNotifications();
+    }]]);
+    return;
+  }
+  const g = el("div", "group");
+  calendar(g, remView, {
+    redraw: render,
+    mark: (d) => { const cls = []; const { y, m } = remView;
+      for (const r of S.reminders) if (firesIn(r, y, m).some((x) => x.getDate() === d)) cls.push(r.on ? "on" : "paused");
+      return cls.includes("on") ? ["on"] : cls.length ? ["paused"] : []; },
+    extra: (w) => w.append(el("div", "calnote", `${cap(MONTHS[remView.m])} ha ${daysIn(remView.y, remView.m)} giorni. Pieno = promemoria attivo, chiaro = in pausa.`)),
+  });
+  v.append(g, el("div", "sechead", "I tuoi promemoria"));
+  const list = el("div", "group");
+  const rank = (r) => isEnded(r) ? 2 : r.on ? 0 : 1;
+  [...S.reminders].sort((a, b) => rank(a) - rank(b) || ((nextOcc(a, 1)[0] || 0) - (nextOcc(b, 1)[0] || 0))).forEach((r) => {
+    const ended = isEnded(r), row = el("div", "row tap" + (r.on && !ended ? "" : " off")), gg = el("div", "grow");
+    gg.append(el("div", null, r.label || whenText(r))); gg.firstChild.style.fontWeight = "700";
+    if (r.label) gg.append(el("div", "sub", whenText(r)));
+    const parts = [], last = lastOcc(r), nx = nextOcc(r, 1)[0];
+    if (ended) parts.push(`Terminato il ${last ? withYear(last) : ""}`); else if (!r.on) parts.push("In pausa");
+    else { if (nx && r.rep === "mese") parts.push(`Prossimo: ${fmtShort(nx)}`); if (last && r.rep === "mese") parts.push(`fino a ${withYear(last)}`); }
+    parts.push(r.all ? "Tutti gli abbonamenti" : (subsOf(r).map((s) => s.name).join(", ") || "Nessun abbonamento"));
+    gg.append(el("div", "sub", parts.join(" · ")));
+    gg.addEventListener("click", () => editReminder(r));
+    row.append(gg);
+    if (ended) row.append(el("span", "badge mid", "Terminato"));
+    else { const sw = el("input", "switch"); sw.type = "checkbox"; sw.checked = r.on; sw.setAttribute("aria-label", "Attivo"); sw.addEventListener("change", () => { r.on = sw.checked; save(); render(); }); row.append(sw); }
+    list.append(row);
+  });
+  v.append(list, el("div", "secfoot", A ? "Le notifiche arrivano anche ad app chiusa. Tienile premute per segnare chi ha pagato." : "Il giorno del promemoria è la scadenza: dopo, chi non ha pagato risulta in ritardo."));
+}
+
+function editReminder(rem) {
+  const isNew = !rem, n = now();
+  const d = rem ? JSON.parse(JSON.stringify(rem)) :
+    { id: uid(), day: n.getDate() > 28 ? 1 : n.getDate(), h: 9, m: 0, we: "no", rep: "mese", onceY: n.getFullYear(), onceM: n.getMonth(), endMode: "mai", endCount: 12, endDate: new Date(n.getFullYear() + 1, n.getMonth(), n.getDate()).toISOString(), start: n.toISOString(), label: "", all: true, subs: [], on: true };
+  if (!d.endDate) d.endDate = new Date(n.getFullYear() + 1, n.getMonth(), n.getDate()).toISOString();
+  const cv = (() => { const x = rem ? (nextOcc(rem, 1)[0] || lastOcc(rem) || n) : n; return { y: x.getFullYear(), m: x.getMonth() }; })();
+  let delConfirm = false;
+  const spec = () => ({ ...d, endDate: d.endMode === "data" ? d.endDate : null });
+  openSheet(isNew ? "Nuovo promemoria" : "Modifica promemoria", (body) => {
+    const draw = () => {
+      const sc = body.scrollTop; body.textContent = ""; const s = spec();
+      body.append(el("div", "sechead", "Giorno del mese"));
+      const gc = el("div", "group");
+      const last = lastOcc(s), mStart = new Date(cv.y, cv.m, 1), mEnd = new Date(cv.y, cv.m + 1, 0, 23, 59);
+      const active = s.rep === "una" ? (s.onceY === cv.y && s.onceM === cv.m) : (mEnd >= startOfDay(new Date(s.start)) && (!last || mStart <= last));
+      const fires = firesIn(s, cv.y, cv.m).map((x) => x.getDate());
+      const others = new Set(); S.reminders.filter((r) => r.id !== d.id && r.on).forEach((r) => firesIn(r, cv.y, cv.m).forEach((x) => others.add(x.getDate())));
+      calendar(gc, cv, {
+        redraw: draw,
+        onPick: (day) => { d.day = day; if (d.rep === "una") { d.onceY = cv.y; d.onceM = cv.m; } draw(); },
+        ghostTo: active && d.day > daysIn(cv.y, cv.m) ? d.day : 0,
+        mark: (day, nn) => { const c = []; const sel = active && (d.day === day || (d.day === 0 && day === nn)); if (sel) c.push("on"); if (fires.includes(day) && !sel) c.push("fires"); if (others.has(day)) c.push("dot"); return c; },
+        extra: (w) => {
+          const lb = el("button", "lastday" + (d.day === 0 ? " sel" : ""), "Ultimo giorno del mese"); lb.addEventListener("click", () => { d.day = 0; if (d.rep === "una") { d.onceY = cv.y; d.onceM = cv.m; } draw(); }); w.append(lb);
+          const nn = daysIn(cv.y, cv.m), nom = nominal(s, cv.y, cv.m), eff = occurrence(s, cv.y, cv.m);
+          let note;
+          if (!active) note = s.rep === "una" ? `Il promemoria è fissato a <b>${MONTHS[s.onceM]} ${s.onceY}</b>. Tocca un giorno qui per spostarlo.` : mEnd < startOfDay(new Date(s.start)) ? `Il promemoria inizia a ${MONTHS[new Date(s.start).getMonth()]}.` : `Il promemoria è già finito: l'ultimo avviso è <b>${last ? withYear(last) : ""}</b>.`;
+          else if (d.day === 0) note = `A ${MONTHS[cv.m]} l'ultimo giorno è il <b>${nn}</b> (${WD[nom.getDay()]}).`;
+          else if (d.day > nn) note = `${cap(MONTHS[cv.m])} ha solo ${nn} giorni: l'avviso del ${d.day} arriva <b>${WD[nom.getDay()]} ${nn}</b>.`;
+          else note = `A ${MONTHS[cv.m]} il ${d.day} è <b>${WDL[nom.getDay()]}</b>.`;
+          if (active && !sameDay(nom, eff)) note += ` Cade nel fine settimana: arriva <b>${fmtShort(eff)}</b>.`;
+          const cn = el("div", "calnote"); cn.innerHTML = note; w.append(cn);
+        },
+      });
+      body.append(gc);
+      // ripetizione
+      body.append(el("div", "sechead", "Ripetizione"));
+      const gr = el("div", "group"), rr = el("div", "row"), sg = el("div", "seg");
+      for (const [val, lab] of [["mese", "Ogni mese"], ["una", "Solo una volta"]]) { const b = el("button", d.rep === val ? "sel" : null, lab); b.addEventListener("click", () => {
+        d.rep = val; if (val === "una") { let y = cv.y, m = cv.m; if (occurrence(d, y, m) < now()) { const nx = new Date(y, m + 1, 1); y = nx.getFullYear(); m = nx.getMonth(); } d.onceY = y; d.onceM = m; cv.y = y; cv.m = m; } draw(); }); sg.append(b); }
+      rr.append(sg); gr.append(rr); body.append(gr);
+      body.append(el("div", "secfoot", d.rep === "una" ? `Arriva solo ${fmtDate(occurrence(d, d.onceY, d.onceM))}. Scegli mese e giorno nel calendario.` : "Lo imposti una volta e si ripete ogni mese nello stesso giorno."));
+      if (d.rep === "mese") {
+        body.append(el("div", "sechead", "Fine del promemoria"));
+        const ge = el("div", "group"), re = el("div", "row"), se = el("div", "seg");
+        for (const [val, lab] of [["mai", "Mai"], ["dopo", "Dopo N volte"], ["data", "In una data"]]) { const b = el("button", d.endMode === val ? "sel" : null, lab); b.addEventListener("click", () => { d.endMode = val; draw(); }); se.append(b); }
+        re.append(se); ge.append(re);
+        if (d.endMode === "dopo") {
+          const rc = el("div", "row"); rc.append(el("span", "grow", "Numero di avvisi"));
+          const stp = el("div", "stepper"), mi = el("button", null, "−"), pl = el("button", null, "+");
+          mi.addEventListener("click", () => { d.endCount = Math.max(1, d.endCount - 1); draw(); }); pl.addEventListener("click", () => { d.endCount = Math.min(120, d.endCount + 1); draw(); });
+          stp.append(mi, el("span", "num", d.endCount), pl); rc.append(stp); ge.append(rc);
+          const ch = el("div", "chips"); for (const [nv, lab] of [[3, "3 mesi"], [6, "6 mesi"], [12, "1 anno"], [24, "2 anni"]]) { const b = el("button", "chip" + (d.endCount === nv ? " sel" : ""), lab); b.addEventListener("click", () => { d.endCount = nv; draw(); }); ch.append(b); }
+          ge.append(ch);
+        }
+        if (d.endMode === "data") {
+          const rd = el("div", "row"), ld = el("label", "grow", "L'abbonamento scade il"); ld.htmlFor = "endDate";
+          const de = el("input", "in link"); de.type = "date"; de.id = "endDate"; const ed = new Date(d.endDate); de.value = `${ed.getFullYear()}-${two(ed.getMonth() + 1)}-${two(ed.getDate())}`;
+          de.addEventListener("change", () => { if (de.value) { const [yy, mm, dd] = de.value.split("-").map(Number); d.endDate = new Date(yy, mm - 1, dd).toISOString(); draw(); } });
+          rd.append(ld, de); ge.append(rd);
+        }
+        body.append(ge);
+        const l2 = lastOcc(spec());
+        body.append(el("div", "secfoot", d.endMode === "mai" ? "Continua finché non lo metti in pausa o lo elimini." : !l2 ? "Con questa data non arriva nessun avviso: scegline una più avanti." : `Ultimo avviso: ${fmtDate(l2)}. ` + (sequence(spec()).filter((x) => x > now()).length ? `Ne restano ${sequence(spec()).filter((x) => x > now()).length}, poi si ferma da solo.` : "Il promemoria è già finito.")));
+      }
+      // fine settimana
+      body.append(el("div", "sechead", "Se cade di sabato o domenica"));
+      const gw = el("div", "group"), rw = el("div", "row"), sw2 = el("div", "seg");
+      for (const [val, lab] of [["no", "Non spostare"], ["prima", "Venerdì prima"], ["dopo", "Lunedì dopo"]]) { const b = el("button", d.we === val ? "sel" : null, lab); b.addEventListener("click", () => { d.we = val; draw(); }); sw2.append(b); }
+      rw.append(sw2); gw.append(rw); body.append(gw);
+      // ora
+      body.append(el("div", "sechead", "Ora"));
+      const go = el("div", "group"), ro = el("div", "row"); const lo = el("label", "grow", "Ora"); lo.htmlFor = "remTime";
+      const ti = el("input", "in link"); ti.type = "time"; ti.id = "remTime"; ti.value = `${two(d.h)}:${two(d.m)}`;
+      ti.addEventListener("change", () => { const [hh, mm] = ti.value.split(":").map(Number); if (!isNaN(hh)) { d.h = hh; d.m = mm || 0; draw(); } });
+      ro.append(lo, ti); go.append(ro);
+      const cq = el("div", "chips"); for (const [lab, hh, mm] of [["Mattina 08:00", 8, 0], ["Pranzo 12:30", 12, 30], ["Sera 18:30", 18, 30]]) { const b = el("button", "chip" + (d.h === hh && d.m === mm ? " sel" : ""), lab); b.addEventListener("click", () => { d.h = hh; d.m = mm; draw(); }); cq.append(b); }
+      go.append(cq); body.append(go);
+      // prossimi avvisi
+      body.append(el("div", "sechead", "Prossimi avvisi"));
+      const gn = el("div", "group"), up = nextOcc(spec(), 3), l3 = lastOcc(spec());
+      if (!up.length) { const r = el("div", "row"); r.append(el("span", "grow sub", "Nessun avviso in arrivo: la data è già passata.")); gn.append(r); }
+      for (const x of up) { const r = el("div", "row"); r.append(el("span", "grow", `${cap(withYear(x))} · ${two(d.h)}:${two(d.m)}`), el("span", "sub", l3 && sameDay(x, l3) ? "ultimo" : (() => { const dd = daysBetween(now(), x); return dd === 0 ? "oggi" : dd === 1 ? "domani" : `tra ${dd} giorni`; })())); gn.append(r); }
+      body.append(gn);
+      // titolo
+      body.append(el("div", "sechead", "Titolo della notifica"));
+      const gt = el("div", "group"), rt = el("div", "row"), lt = el("input", "in left"); lt.placeholder = "Facoltativo: se vuoto mostra il totale"; lt.value = d.label; lt.setAttribute("aria-label", "Titolo");
+      lt.addEventListener("input", () => { d.label = lt.value; }); rt.append(lt); gt.append(rt); body.append(gt);
+      // abbonamenti
+      body.append(el("div", "sechead", "Per quali abbonamenti"));
+      const gs = el("div", "group"), ra = el("div", "row"), la = el("label", "grow", "Tutti gli abbonamenti"); la.htmlFor = "allSw";
+      const sa = el("input", "switch"); sa.type = "checkbox"; sa.id = "allSw"; sa.checked = d.all; sa.addEventListener("change", () => { d.all = sa.checked; draw(); });
+      ra.append(la, sa); gs.append(ra);
+      if (!d.all) for (const sb of S.subs) {
+        const on = d.subs.includes(sb.id), r = el("div", "row tap");
+        r.innerHTML = `<span class="ck${on ? " on" : ""}">${on ? "✓" : ""}</span>` + tile(sb.cat) + `<span class="grow">${esc(sb.name)}</span>`;
+        r.addEventListener("click", () => { d.subs = on ? d.subs.filter((x) => x !== sb.id) : [...d.subs, sb.id]; draw(); }); gs.append(r);
+      }
+      body.append(gs);
+      // anteprima
+      const chosenSubs = d.all ? S.subs : S.subs.filter((x) => d.subs.includes(x.id));
+      body.append(el("div", "sechead", "Come arriverà la notifica"));
+      if (chosenSubs.length) {
+        const nx = nextWithMonth(spec(), 1)[0], t = nx ? notificationText(chosenSubs, nx.y, nx.m) : notificationText(chosenSubs, now().getFullYear(), now().getMonth());
+        const nb = el("div", "notif"); nb.innerHTML = `<div class="ap">${APPICON}</div><div class="grow"><div class="t"><span>Quote Abbonamenti</span><span>${nx ? fmtShort(nx.date) + ", " + two(d.h) + ":" + two(d.m) : ""}</span></div><b>${esc(d.label || (t ? t.title : "Nessuna quota"))}</b><p>${esc(t ? t.body : "In questo mese non c'è niente da chiedere.")}</p></div>`;
+        body.append(nb, el("div", "secfoot", A ? "Tenendo premuta la notifica trovi “… ha pagato”, “Hanno pagato tutti” e “Ricordamelo domani”." : "Così arriverebbe nell'app per Android o iPhone; nella versione web non arrivano notifiche."));
+      } else body.append(el("div", "secfoot", "Scegli almeno un abbonamento per vedere la notifica."));
+      if (!isNew) {
+        const gd = el("div", "group"); gd.style.marginTop = "18px"; const rd = el("div", "row tap"), lb = el("span", "grow danger", "Elimina promemoria");
+        rd.append(lb); rd.addEventListener("click", () => { if (!delConfirm) { delConfirm = true; lb.textContent = "Tocca di nuovo per eliminare"; return; } S.reminders = S.reminders.filter((x) => x.id !== d.id); save(); closeSheet(); toast("Promemoria eliminato"); });
+        gd.append(rd); body.append(gd);
+      }
+      setSaveEnabled(d.all || d.subs.length > 0);
+      body.scrollTop = sc;
+    };
+    draw();
+  }, () => {
+    if (!d.all && !d.subs.length) return false;
+    const out = spec();
+    if (out.endMode !== "data") out.endDate = null;
+    if (isNew) S.reminders.push(out); else S.reminders[S.reminders.findIndex((x) => x.id === d.id)] = out;
+    save(); toast(isNew ? "Promemoria aggiunto" : "Promemoria aggiornato");
+    if (A && A.requestNotifications && A.notificationsAllowed && !A.notificationsAllowed()) A.requestNotifications();
+  });
+}
+
+// ---------- Impostazioni ----------
+function renderSettings(v) {
+  setTop("Impostazioni");
+  const st = S.settings;
+  v.append(el("div", "sechead", "Tema"));
+  const g1 = el("div", "group"), th = el("div", "themes");
+  for (const [id, t] of Object.entries(THEMES)) {
+    const b = el("button", "theme" + (st.theme === id ? " sel" : "")); b.setAttribute("aria-pressed", st.theme === id);
+    b.innerHTML = `<span class="sw" style="background:${t.light[0]};box-shadow:inset 0 0 0 6px ${t.light[1]},inset 0 0 0 7px rgb(0 0 0 / .12)">${st.theme === id ? "✓" : ""}</span><span>${t.name}</span>`;
+    b.addEventListener("click", () => { st.theme = id; save(); render(); }); th.append(b);
+  }
+  g1.append(th); v.append(g1);
+  v.append(el("div", "sechead", "Aspetto"));
+  const g2 = el("div", "group"), r2 = el("div", "row"), sg = el("div", "seg"), forced = !!(THEMES[st.theme] || {}).forceDark;
+  for (const [val, lab] of [["sistema", "Automatico"], ["chiaro", "Chiaro"], ["scuro", "Scuro"]]) { const b = el("button", (forced ? val === "scuro" : st.mode === val) ? "sel" : null, lab); b.disabled = forced; b.addEventListener("click", () => { st.mode = val; save(); render(); }); sg.append(b); }
+  r2.append(sg); g2.append(r2); v.append(g2, el("div", "secfoot", forced ? "Il tema Notte è sempre scuro." : "Automatico segue l'impostazione del telefono."));
+  // accesso (solo nell'app Android, dove c'è lo sblocco del telefono)
+  const hasLock = !!A && (!A.hasLock || A.hasLock());
+  if (A) {
+  v.append(el("div", "sechead", "Accesso"));
+  const g3 = el("div", "group"), r3 = el("div", "row"), l3 = el("label", "grow", "Blocca con impronta o PIN"); l3.htmlFor = "lockSw";
+  const s3 = el("input", "switch"); s3.type = "checkbox"; s3.id = "lockSw"; s3.checked = st.lock && hasLock; s3.disabled = !hasLock;
+  s3.addEventListener("change", () => {
+    if (s3.checked) { st.lock = true; save(); render(); return; }
+    s3.checked = true; authenticate((ok) => { if (ok) { st.lock = false; save(); } render(); });
+  });
+  r3.append(l3, s3); g3.append(r3);
+  if (st.lock && hasLock) {
+    const r4 = el("div", "row"); r4.append(el("span", "grow", "Richiedi"));
+    const s4 = el("div", "seg"); s4.style.flex = "0 1 200px";
+    for (const [val, lab] of [[0, "Subito"], [60, "1 min"], [300, "5 min"]]) { const b = el("button", st.lockDelay === val ? "sel" : null, lab); b.addEventListener("click", () => { st.lockDelay = val; save(); render(); }); s4.append(b); }
+    r4.append(s4); g3.append(r4);
+  }
+  v.append(g3, el("div", "secfoot", !hasLock ? "Per bloccare l'app imposta prima un PIN, una sequenza o l'impronta nelle impostazioni del telefono." : st.lock ? "All'apertura l'app chiede l'impronta o il PIN del telefono. Per disattivare il blocco devi identificarti." : "L'app si apre direttamente, senza impronta né PIN."));
+  }
+  // messaggi
+  v.append(el("div", "sechead", "Messaggi"));
+  const g5 = el("div", "group");
+  for (const [k, lab, ph, type] of [["twint", "Numero TWINT", "079 123 45 67", "tel"], ["sign", "Firma", "Il tuo nome", "text"]]) {
+    const r = el("div", "row"), l = el("label", null, lab); l.htmlFor = "set-" + k;
+    const i = el("input", "in link"); i.id = "set-" + k; i.type = type; i.placeholder = ph; i.value = st[k];
+    i.addEventListener("change", () => { st[k] = i.value.trim(); save(); }); r.append(l, i); g5.append(r);
+  }
+  v.append(g5, el("div", "secfoot", "Il numero viene aggiunto ai messaggi, così chi deve pagare sa subito dove mandare i soldi."));
+  // sollecito (solo dove ci sono le notifiche)
+  if (A) {
+  v.append(el("div", "sechead", "Sollecito automatico"));
+  const g6 = el("div", "group"), r6 = el("div", "row"), s6 = el("div", "seg");
+  for (const [val, lab] of [[0, "No"], [3, "3 g"], [5, "5 g"], [7, "7 g"], [14, "14 g"]]) { const b = el("button", st.fu === val ? "sel" : null, lab); b.addEventListener("click", () => { st.fu = val; save(); render(); }); s6.append(b); }
+  r6.append(s6); g6.append(r6);
+  v.append(g6, el("div", "secfoot", st.fu ? `${st.fu} giorni dopo il promemoria, se qualcuno non ha ancora pagato, ricevi una notifica con chi manca. Se hanno pagato tutti, non arriva.` : "Nessun sollecito: ricevi solo il promemoria."));
+  }
+  // backup
+  v.append(el("div", "sechead", "Backup"));
+  const g7 = el("div", "group");
+  const day = `${keyOf(now())}-${two(now().getDate())}`;
+  const addRow = (text, fn) => { const r = el("div", "row tap"); r.append(el("span", "grow link", text)); r.addEventListener("click", fn); g7.append(r); };
+  addRow("Esporta backup", () => { saveFile(`QuoteAbbonamenti-backup-${day}.json`, "application/json", JSON.stringify({ ...S, exportedAt: new Date().toISOString() }, null, 2)); st.lastBackup = new Date().toISOString(); save(); });
+  addRow("Importa backup", () => openBackup());
+  addRow("Esporta pagamenti per Excel (CSV)", () => saveFile(`QuoteAbbonamenti-pagamenti-${day}.csv`, "text/csv", paymentsCSV()));
+  v.append(g7, el("div", "secfoot", (A ? "I dati restano solo su questo telefono: esporta ogni tanto un backup (per esempio su Google Drive) per non perderli se cambi telefono." : "I dati restano solo su questo dispositivo, dentro l'app: esporta ogni tanto un backup (per esempio su iCloud Drive con “Salva su File”) per non perderli se cambi telefono.") + (st.lastBackup ? ` Ultimo backup: ${fmtDate(new Date(st.lastBackup))}.` : "")));
+  // dati
+  v.append(el("div", "sechead", "Dati"));
+  const g8 = el("div", "group");
+  const r8 = el("div", "row tap"); r8.append(el("span", "grow link", "Carica dati di esempio")); r8.addEventListener("click", loadSample); g8.append(r8);
+  let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
+  r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
+  g8.append(r9);
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.0 · funziona anche senza internet"));
+}
+function paymentsCSV() {
+  const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
+  const cell = (x) => `"${String(x).replace(/"/g, '""')}"`;
+  const lines = ["Mese;Persona;Abbonamento;Importo CHF;Pagato il"];
+  for (const mk of Object.keys(S.payments).sort()) for (const [k, p] of Object.entries(S.payments[mk])) {
+    const [sid, pk] = k.split("|"), d = new Date(p.on);
+    lines.push([cell(mk), cell(cap(pk)), cell(names[sid] || "(eliminato)"), p.amount.toFixed(2), `${two(d.getDate())}.${two(d.getMonth() + 1)}.${d.getFullYear()}`].join(";"));
+  }
+  return "﻿" + lines.join("\r\n");
+}
+function openBackup() {
+  const handle = (text) => {
+    let j; try { j = JSON.parse(text); } catch (e) { toast("Questo file non è un backup di Quote Abbonamenti"); return; }
+    if (!j || j.v !== 1 || !Array.isArray(j.subs)) { toast("Questo file non è un backup di Quote Abbonamenti"); return; }
+    const when = j.exportedAt ? fmtDate(new Date(j.exportedAt)) : "data sconosciuta";
+    openSheet("Importa backup", (body) => {
+      body.append(el("div", "secfoot", `Backup del ${when}: ${j.subs.length} abbonamenti, ${Object.values(j.payments || {}).reduce((a, o) => a + Object.keys(o).length, 0)} pagamenti e ${(j.reminders || []).length} promemoria.`),
+        el("div", "secfoot", "Tocca “Sostituisci” per sostituire tutti i dati attuali con quelli del backup."));
+    }, () => { S = Object.assign(DEFAULT(), j, { settings: Object.assign(DEFAULT().settings, j.settings) }); delete S.exportedAt; save(); toast("Backup importato"); }, "Sostituisci");
+  };
+  if (A && A.openFile) { window.__onFile = handle; A.openFile(); return; }
+  const i = document.createElement("input"); i.type = "file"; i.accept = "application/json,.json";
+  i.addEventListener("change", () => { const f = i.files[0]; if (f) f.text().then(handle); }); i.click();
+}
+
+// ---------- dati di esempio ----------
+function loadSample() {
+  const n = now(), D = (k, d) => new Date(n.getFullYear(), n.getMonth() + k, d).toISOString(), created = D(-5, 1);
+  const sub = (id, name, cat, total, members, extra = {}) => ({ id, name, cat, total, cycle: 1, renewal: 1, split: "rate", members: members.map(([nm, sh]) => ({ name: nm, share: sh })), history: [], createdAt: created, billingDay: 0, renewalAlert: false, alertDays: 3, notice: 0, trialEnd: null, ...extra });
+  S.subs = [
+    sub("ex-spotify", "Spotify Family", "musica", 22.95, [["Marco", 5.75], ["Giulia", 5.75]], { billingDay: 5, renewalAlert: true }),
+    sub("ex-netflix", "Netflix", "video", 20.90, [["Marco", 10.45]]),
+    sub("ex-disney", "Disney+", "video", 12.90, [["Luca", 6.45]], { trialEnd: D(0, Math.min(28, n.getDate() + 16)) }),
+    sub("ex-icloud", "iCloud+ 2 TB", "cloud", 14.85, [["Giulia", 4.95], ["Luca", 4.95]]),
+    sub("ex-m365", "Microsoft 365 Family", "software", 99, [["Giulia", 16.5], ["Luca", 16.5], ["Marco", 16.5]], { cycle: 12, renewal: 3, billingDay: 15, renewalAlert: true, notice: 30 }),
+  ];
+  S.reminders = [
+    { id: "ex-r1", day: 3, h: 9, m: 0, we: "no", rep: "mese", onceY: n.getFullYear(), onceM: n.getMonth(), endMode: "mai", endCount: 12, endDate: null, start: created, label: "", all: true, subs: [], on: true },
+  ];
+  S.payments = {};
+  // Giulia paga puntuale, Luca 2 giorni dopo, Marco 6 giorni dopo.
+  const delay = { giulia: 0, luca: 2, marco: 6 };
+  const pay = (y, m, onlyKey) => { for (const p of peopleFor(y, m)) { if (onlyKey && p.key !== onlyKey) continue; for (const it of p.items) {
+    setPaid(y, m, it.sub, p.key, it.share, true);
+    const on = new Date(it.due.getFullYear(), it.due.getMonth(), it.due.getDate() + (delay[p.key] ?? 1), 9);
+    S.payments[mkey(y, m)][`${it.sub.id}|${p.key}`].on = (on < n ? on : n).toISOString(); } } };
+  for (let k = 5; k >= 1; k--) { const d = new Date(n.getFullYear(), n.getMonth() - k, 1); pay(d.getFullYear(), d.getMonth()); }
+  pay(n.getFullYear(), n.getMonth(), "giulia");
+  save(); tab = "mese"; render(); toast("Dati di esempio caricati: puoi modificarli o cancellarli nelle Impostazioni");
+}
+
+/* ==========================================================================
+   Schermata di accesso (impronta o PIN del telefono)
+   ========================================================================== */
+let authCb = null;
+function authenticate(cb) {
+  if (!A || !A.authenticate) { cb(true); return; }
+  authCb = cb; A.authenticate();
+}
+window.onAuthResult = (ok) => { const cb = authCb; authCb = null; if (cb) cb(!!ok); };
+function greeting() { const h = now().getHours(), b = h < 12 ? "Buongiorno" : h < 18 ? "Buon pomeriggio" : "Buonasera", nm = S.settings.sign.trim(); return nm ? `${b}, ${nm}` : b; }
+function showLock() {
+  const L = $("lock"); $("lockGreet").textContent = greeting(); $("lockErr").hidden = true;
+  L.classList.remove("opening", "success"); L.hidden = false; void L.offsetWidth; L.classList.add("intro");
+  setTimeout(tryUnlock, 900);
+}
+function tryUnlock() {
+  if ($("lock").hidden) return;
+  authenticate((ok) => {
+    const L = $("lock");
+    if (!ok) { $("lockErr").textContent = "Sblocco annullato. Tocca “Sblocca” per riprovare."; $("lockErr").hidden = false; return; }
+    if (A && A.vibrate) A.vibrate();
+    L.classList.add("success"); setTimeout(() => { L.classList.add("opening"); setTimeout(() => { L.hidden = true; L.classList.remove("intro", "opening", "success"); }, 560); }, 400);
+  });
+}
+$("unlockBtn").addEventListener("click", tryUnlock);
+$("lockIcon").innerHTML = APPICON;
+[["musica", 12, .05, 26, 34], ["video", 80, .35, 31, 40], ["cloud", 32, .62, 28, 30], ["giochi", 88, .85, 35, 32], ["fitness", 58, .18, 30, 28], ["notizie", 4, .5, 37, 30], ["software", 68, .72, 27, 34]].forEach(([c, x, ph, secs, size]) => {
+  const w = el("span"); w.innerHTML = tile(c, size); const t = w.firstChild; t.style.left = x + "%"; t.style.animationDuration = secs + "s"; t.style.animationDelay = (-ph * secs) + "s"; $("lockTiles").append(t);
+});
+const lockActive = () => S.settings.lock && (!A || !A.hasLock || A.hasLock()) && !!A;
+
+// ---------- chiamate da Android ----------
+window.onAppResume = (msAway) => {
+  applyPending();
+  if (lockActive() && msAway >= (S.settings.lockDelay || 0) * 1000 && $("lock").hidden) showLock();
+  if (view.y !== now().getFullYear() || view.m !== now().getMonth()) { /* resta sul mese scelto */ }
+  render(); scheduleNotifications();
+};
+window.onPendingPayments = () => applyPending();
+window.onFileOpened = (text) => { if (window.__onFile) window.__onFile(text); };
+window.onFileSaved = (ok) => toast(ok ? "File salvato" : "File non salvato");
+window.onNotificationsChanged = () => render();
+window.onNightModeChanged = () => applyTheme();
+window.toast = toast;
+/** Tasto Indietro di Android: chiude il foglio aperto; altrimenti lascia uscire. */
+window.onBack = () => { if (!$("sheet").hidden) { closeSheet(); return true; } if (tab !== "mese") { tab = "mese"; render(); return true; } return false; };
+
+// ---------- avvio ----------
+if (!A) {
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+render();
+if (lockActive()) showLock();
+applyPending();
+scheduleNotifications();
+</script>
+</body>
+</html>
