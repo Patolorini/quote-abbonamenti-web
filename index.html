@@ -846,7 +846,7 @@ function editSub(sub) {
         sp.addEventListener("change", () => { pastPaid = sp.checked; draw(); }); rp.append(lp, sp); gs.append(rp);
       }
       body.append(gs);
-      body.append(el("div", "secfoot", `Dal ${fmtDate(startDate)}` + (startDate.getDate() > 1 ? ": nel primo mese la scadenza è quel giorno." : ".")));
+      body.append(el("div", "secfoot", `Dal ${fmtDate(startDate)}` + (startDate.getDate() > 1 ? ": nel primo mese la scadenza è quel giorno." : ".") + ` L'addebito è il ${startDate.getDate()} di ogni ${d.cycle === 1 ? "mese" : "rinnovo"}.`));
       if (newPast) body.append(el("div", "secfoot", pastPaid ? "I mesi passati vengono segnati come pagati: li trovi con ‹ in Questo mese e puoi togliere la spunta a chi non ha pagato." : "I mesi passati restano da pagare: in Questo mese, con ‹, vedi chi è in ritardo."));
       if (d.cycle > 1) {
         body.append(el("div", "sechead", "Rinnovo"));
@@ -907,9 +907,7 @@ function editSub(sub) {
       // rinnovo e disdetta
       body.append(el("div", "sechead", "Rinnovo e disdetta"));
       const gr = el("div", "group");
-      const rd = el("div", "row"); rd.append(el("span", "grow", "Giorno di addebito"));
-      const sd = el("select", "in"); sd.append(new Option("Non lo so", 0)); for (let i = 1; i <= 31; i++) sd.append(new Option(`Il ${i}`, i)); sd.value = d.billingDay || 0;
-      sd.addEventListener("change", () => { d.billingDay = +sd.value; draw(); }); rd.append(sd); gr.append(rd);
+      d.billingDay = startDate.getDate(); // l'addebito è lo stesso giorno in cui è iniziato
       const rt = el("div", "row"); const lt = el("label", "grow", "È una prova gratuita"); lt.htmlFor = "swTrial";
       const st = el("input", "switch"); st.type = "checkbox"; st.id = "swTrial"; st.checked = !!d.trialEnd;
       st.addEventListener("change", () => { d.trialEnd = st.checked ? new Date(now().getFullYear(), now().getMonth(), now().getDate() + 30).toISOString() : null; draw(); });
@@ -938,7 +936,7 @@ function editSub(sub) {
       body.append(gr);
       let summary;
       if (d.trialEnd) { const te = new Date(d.trialEnd), al = new Date(te.getFullYear(), te.getMonth(), te.getDate() - d.alertDays); summary = `La prova finisce ${fmtDate(te)}. Ti avviso ${fmtDate(al)}, così puoi disdire se non ti interessa.`; }
-      else { const c = nextCharge(d); summary = !c ? "Indica il giorno di addebito: serve per avvisarti prima del rinnovo." : `Prossimo rinnovo: ${fmtDate(c)}. Per disdire: entro ${fmtDate(cancelDeadline(c, d.notice))}.` + (d.renewalAlert ? ` Ti avviso ${fmtDate(alertDate(c, d.notice, d.alertDays))}.` : ""); }
+      else { const c = nextCharge(d); summary = !c ? "" : `Addebito il ${d.billingDay} (il giorno d'inizio). Prossimo rinnovo: ${fmtDate(c)}. Per disdire: entro ${fmtDate(cancelDeadline(c, d.notice))}.` + (d.renewalAlert ? ` Ti avviso ${fmtDate(alertDate(c, d.notice, d.alertDays))}.` : ""); }
       body.append(el("div", "secfoot", summary));
       if (!isNew) {
         const gd = el("div", "group"); gd.style.marginTop = "18px";
@@ -974,7 +972,7 @@ function editSub(sub) {
   }, () => {
     const members = cleanMembers();
     if (!d.name.trim() || !(d.total > 0) || dup()) return false;
-    const out = { ...d, name: d.name.trim(), total: round2(d.total), members };
+    const out = { ...d, name: d.name.trim(), total: round2(d.total), members, billingDay: startDate.getDate() };
     const startAgo = Math.max(0, monthsAgo(startDate));
     if (startDate.getTime() !== origDate.getTime()) out.createdAt = startDate.toISOString();
     const markFrom = startAgo, markTo = isNew ? 0 : origStart; // mesi aggiunti: da startAgo a markTo (escluso)
@@ -1330,7 +1328,7 @@ function renderSettings(v) {
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.4 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.5 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
