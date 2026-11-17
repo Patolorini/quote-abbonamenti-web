@@ -800,6 +800,10 @@ function editSub(sub) {
   const d = sub ? JSON.parse(JSON.stringify({ ...sub, total: cur.total, members: cur.members })) :
     { id: uid(), name: "", cat: "altro", total: 0, cycle: 1, renewal: now().getMonth() + 1, split: "rate", members: [{ name: "", share: 0 }], history: [], createdAt: new Date().toISOString(), billingDay: 0, renewalAlert: false, alertDays: 3, notice: 0, trialEnd: null };
   let catTouched = !isNew, eff = 0, delConfirm = false;
+  // da quando lo dividete: mesi indietro rispetto a oggi (0 = questo mese)
+  const monthsAgo = (dt) => (now().getFullYear() - dt.getFullYear()) * 12 + now().getMonth() - dt.getMonth();
+  const origStart = sub ? Math.max(0, monthsAgo(new Date(sub.createdAt || 0))) : 0;
+  let startAgo = isNew ? Math.max(0, Math.min(36, monthsAgo(new Date(view.y, view.m, 1)))) : Math.min(origStart, 36), pastPaid = true;
   if (sub && Object.keys(S.payments[k] || {}).some((x) => x.startsWith(sub.id + "|"))) eff = 1;
   const cleanMembers = () => d.members.map((x) => ({ name: x.name.trim(), share: round2(x.share) })).filter((x) => x.name && x.share > 0);
   const termsChanged = () => { if (isNew) return false; const a = JSON.stringify({ t: round2(cur.total), m: cur.members.map((x) => [personKey(x.name), round2(x.share)]) }); const b = JSON.stringify({ t: round2(d.total), m: cleanMembers().map((x) => [personKey(x.name), x.share]) }); return a !== b; };
@@ -822,6 +826,22 @@ function editSub(sub) {
       tot.addEventListener("input", () => { d.total = parseAmount(tot.value); updateMine(); validate(); });
       r3.append(tot, el("span", "sub", "CHF")); g1.append(r3);
       body.append(g1);
+      // inizio
+      body.append(el("div", "sechead", "Da quando lo dividete"));
+      const gs = el("div", "group"); const rs0 = el("div", "row"); rs0.append(el("span", "grow", "Dal mese di"));
+      const ss = el("select", "in"); ss.id = "fStart"; ss.setAttribute("aria-label", "Da quando lo dividete");
+      const maxAgo = Math.max(36, origStart);
+      for (let a = 0; a <= maxAgo; a++) { if (a > 36 && a !== origStart) continue; const dd = new Date(now().getFullYear(), now().getMonth() - a, 1); ss.append(new Option(a === 0 ? "Questo mese" : a === 1 ? `Mese scorso (${MONTHS[dd.getMonth()]})` : `${cap(MONTHS[dd.getMonth()])} ${dd.getFullYear()}`, a)); }
+      ss.value = startAgo; ss.addEventListener("change", () => { startAgo = +ss.value; draw(); });
+      rs0.append(ss); gs.append(rs0);
+      const newPast = startAgo > (isNew ? 0 : origStart) ? startAgo - (isNew ? 0 : origStart) : 0;
+      if (newPast) {
+        const rp = el("div", "row"); const lp = el("label", "grow", newPast === 1 ? "Il mese scorso è già stato pagato" : `I ${newPast} mesi passati sono già stati pagati`); lp.htmlFor = "swPastPaid";
+        const sp = el("input", "switch"); sp.type = "checkbox"; sp.id = "swPastPaid"; sp.checked = pastPaid;
+        sp.addEventListener("change", () => { pastPaid = sp.checked; draw(); }); rp.append(lp, sp); gs.append(rp);
+      }
+      body.append(gs);
+      if (newPast) body.append(el("div", "secfoot", pastPaid ? "I mesi passati vengono segnati come pagati: li trovi con ‹ in Questo mese e puoi togliere la spunta a chi non ha pagato." : "I mesi passati restano da pagare: in Questo mese, con ‹, vedi chi è in ritardo."));
       if (d.cycle > 1) {
         body.append(el("div", "sechead", "Rinnovo"));
         const g = el("div", "group");
@@ -931,6 +951,9 @@ function editSub(sub) {
     const members = cleanMembers();
     if (!d.name.trim() || !(d.total > 0) || dup()) return false;
     const out = { ...d, name: d.name.trim(), total: round2(d.total), members };
+    const startDate = new Date(now().getFullYear(), now().getMonth() - startAgo, 1);
+    if (isNew ? startAgo > 0 : startAgo !== origStart) out.createdAt = startDate.toISOString();
+    const markFrom = startAgo, markTo = isNew ? 0 : origStart; // mesi aggiunti: da startAgo a markTo (escluso)
     if (!isNew && termsChanged()) {
       const hist = (sub.history || []).slice();
       if (!hist.length) hist.push({ from: "0000-01", total: cur.total, members: cur.members });
@@ -939,7 +962,17 @@ function editSub(sub) {
       out.history.push({ from, total: out.total, members });
     } else if (!isNew) out.history = sub.history || [];
     if (isNew) S.subs.push(out); else S.subs[S.subs.findIndex((x) => x.id === sub.id)] = out;
-    save(); toast(isNew ? "Abbonamento aggiunto" : "Salvato");
+    if (pastPaid && markFrom > markTo) {
+      for (let a = markFrom; a > markTo; a--) {
+        const dd = new Date(now().getFullYear(), now().getMonth() - a, 1), key = keyOf(dd);
+        for (const p of peopleFor(dd.getFullYear(), dd.getMonth())) for (const it of p.items) {
+          if (it.sub.id !== out.id || it.paid) continue;
+          S.payments[key] = S.payments[key] || {};
+          S.payments[key][`${out.id}|${p.key}`] = { on: it.due.toISOString(), amount: it.share };
+        }
+      }
+    }
+    save(); toast(isNew ? (startAgo ? `Abbonamento aggiunto da ${MONTHS[startDate.getMonth()]} ${startDate.getFullYear()}` : "Abbonamento aggiunto") : "Salvato");
   });
 }
 
@@ -1268,7 +1301,7 @@ function renderSettings(v) {
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.1 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.2 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
