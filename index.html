@@ -233,6 +233,11 @@ html { background: linear-gradient(var(--bg) 50%, var(--cell) 50%) fixed }
 body { background: transparent }
 #app { bottom: auto; height: 100%; height: 100dvh; height: var(--apph, 100dvh); background: var(--bg) }
 /* Dalla Home dell'iPhone, iOS calcola l'altezza senza la barra di stato: l'app usa l'altezza vera dello schermo */
+html.ios-pwa, html.ios-pwa body { height: var(--apph, 100%) }
+/* riempie comunque l'eventuale spazio sotto la barra delle schede e sotto i fogli */
+.tabbar { position: relative }
+.tabbar::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 200px; background: var(--cell); pointer-events: none }
+.sheet::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 200px; background: var(--bg); pointer-events: none }
 .sheet, .lock { bottom: auto; height: 100%; height: 100dvh; height: var(--apph, 100dvh) }
 .sheet .bar2 { padding-left: max(10px, calc(var(--sl) - 6px)); padding-right: max(10px, calc(var(--sr) - 6px)) }
 @media (min-width: 390px) { html, body { font-size: 16px } }
@@ -283,10 +288,11 @@ function fitScreen() {
   if (!(/iPhone|iPod/.test(navigator.userAgent) && STANDALONE)) return;
   const portrait = window.matchMedia("(orientation: portrait)").matches;
   const full = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
-  const gap = full - window.innerHeight;
-  // solo la differenza della barra di stato (non la tastiera aperta)
-  if (gap > 0 && gap <= 80) document.documentElement.style.setProperty("--apph", full + "px");
-  else document.documentElement.style.removeProperty("--apph");
+  const root = document.documentElement;
+  root.classList.add("ios-pwa");
+  // con la tastiera aperta la finestra è molto più bassa: lì decide iOS
+  if (window.innerHeight < full - 120) root.style.removeProperty("--apph");
+  else root.style.setProperty("--apph", full + "px");
 }
 fitScreen();
 window.addEventListener("resize", fitScreen);
@@ -1262,7 +1268,7 @@ function renderSettings(v) {
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.0 · funziona anche senza internet"));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.1 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
