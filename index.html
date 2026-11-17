@@ -169,9 +169,39 @@ button.d { cursor: pointer }
 .hbar { height: 5px; border-radius: 3px; margin-top: 4px }
 
 /* impostazioni */
+/* decorazioni dei temi (dietro all'app) */
+#deco { position: fixed; left: 0; right: 0; top: 0; height: 100%; height: var(--apph, 100dvh); z-index: 0; pointer-events: none; overflow: hidden; display: none; background: var(--decobg, var(--bg)) }
+html.has-deco #deco { display: block }
+#app { z-index: 1 }
+html.has-deco #app { background: transparent }
+html.has-deco #app .group { background: color-mix(in srgb, var(--cell) 84%, transparent) }
+html.has-deco .tabbar { background: color-mix(in srgb, var(--cell) 90%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px) }
+#deco .p { position: absolute; top: -40px; animation: fall linear infinite; will-change: transform }
+#deco .p svg { display: block; width: 100%; height: 100% }
+@keyframes fall { from { transform: translate3d(0, 0, 0) rotate(0deg) } to { transform: translate3d(var(--dx, 40px), 115vh, 0) rotate(var(--rot, 360deg)) } }
+#deco .star { position: absolute; border-radius: 50%; background: #fff; animation: tw ease-in-out infinite }
+@keyframes tw { 0%, 100% { opacity: .2 } 50% { opacity: 1 } }
+#deco .shoot { position: absolute; width: 120px; height: 2px; background: linear-gradient(90deg, #fff, transparent); opacity: 0; transform: rotate(-25deg); animation: shoot 9s ease-out infinite }
+@keyframes shoot { 0%, 88% { opacity: 0; translate: 0 0 } 90% { opacity: 1 } 100% { opacity: 0; translate: -260px 120px } }
+#deco .wave { position: absolute; left: 0; bottom: 0; width: 200%; animation: wave linear infinite }
+#deco .wave svg { width: 100%; height: 100%; display: block }
+@keyframes wave { to { transform: translateX(-50%) } }
+#deco .bub { position: absolute; bottom: -20px; border-radius: 50%; border: 1.5px solid rgb(255 255 255 / .55); animation: bub linear infinite }
+@keyframes bub { to { transform: translateY(-110vh) } }
+#deco .glow { position: absolute; border-radius: 50%; filter: blur(46px); opacity: .55; animation: drift ease-in-out infinite alternate }
+@keyframes drift { from { transform: translate(-8%, 0) scale(1) } to { transform: translate(10%, 6%) scale(1.25) } }
+#deco .moon { position: absolute; top: calc(18px + env(safe-area-inset-top, 0px)); right: 22px; width: 54px; height: 54px }
+@media (prefers-reduced-motion: reduce) { #deco * { animation: none !important } #deco .p { display: none } }
 .themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px }
 .theme { border: 0; background: var(--bg); border-radius: 14px; padding: 12px 4px 9px; display: flex; flex-direction: column; align-items: center; gap: 7px; font-size: .8rem; cursor: pointer }
-.theme .sw { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800 }
+.theme .sw { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; overflow: hidden; position: relative }
+.theme .sw svg { position: absolute; inset: 0; width: 100%; height: 100% }
+.theme .sw b { position: relative; text-shadow: 0 1px 3px rgb(0 0 0 / .45) }
+.swatches { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; padding: 12px 16px 14px; justify-items: center }
+.swatches button, .swatches label { width: 36px; height: 36px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; color: #fff; font-weight: 800; position: relative }
+.swatches .sel { box-shadow: 0 0 0 2px var(--cell), 0 0 0 4px var(--fg) }
+.swatches label { background: conic-gradient(#f44, #fd4, #4d6, #4cf, #64f, #f4c, #f44) }
+.swatches label input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer }
 .theme.sel { box-shadow: 0 0 0 2px var(--accent); font-weight: 700 }
 
 /* barra schede */
@@ -193,7 +223,7 @@ button.d { cursor: pointer }
 
 /* schermata di accesso */
 .lock { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; text-align: center; color: #fff; overflow: hidden;
-  background: linear-gradient(180deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 62%, #000) 58%, #070b0a 100%) }
+  background: var(--lockbg, linear-gradient(180deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 62%, #000) 58%, #070b0a 100%)) }
 .lock .tiles { position: absolute; inset: 0; pointer-events: none; overflow: hidden }
 .lock .tiles .tile { position: absolute; bottom: -70px; opacity: .2; animation: floatUp linear infinite }
 @keyframes floatUp { from { transform: translateY(0) rotate(-12deg) } to { transform: translateY(-1100px) rotate(12deg) } }
@@ -271,6 +301,7 @@ html.ios-pwa, html.ios-pwa body { height: var(--apph, 100%) }
 </style>
 </head>
 <body>
+<div id="deco" aria-hidden="true"></div>
 <div id="app">
   <div class="top" id="top"></div>
   <main class="view" id="view"></main>
@@ -385,43 +416,123 @@ const guessCat = (name) => { const n = name.toLowerCase(); for (const [k, c] of 
 const APPICON = '<svg viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#17A693"/><stop offset="1" stop-color="#0A5F54"/></linearGradient></defs><rect width="1024" height="1024" fill="url(#g1)"/><rect x="212" y="272" width="560" height="500" rx="92" fill="#fff"/><path d="M212 364a92 92 0 0 1 92-92h376a92 92 0 0 1 92 92v38H212z" fill="#CDEDE7"/><rect x="338" y="214" width="48" height="122" rx="24" fill="#fff" stroke="#0A5F54" stroke-width="14"/><rect x="598" y="214" width="48" height="122" rx="24" fill="#fff" stroke="#0A5F54" stroke-width="14"/><path class="chk" d="M352 570l88 88 170-180" fill="none" stroke="#0F8A7A" stroke-width="66" stroke-linecap="round" stroke-linejoin="round"/><g class="coin"><circle cx="738" cy="724" r="138" fill="#F6C343" stroke="#fff" stroke-width="30"/><circle cx="738" cy="724" r="88" fill="none" stroke="#D99A1E" stroke-width="18"/><path d="M712 676h64M712 676v100M712 724h52" fill="none" stroke="#9A6510" stroke-width="22" stroke-linecap="round"/></g></svg>';
 
 // ---------- temi ----------
+// Tema "Predefinito": colori a scelta. Gli altri temi hanno colori e decorazioni propri.
+const ACCENTS = [["#0F8A7A", "Alpino"], ["#007AFF", "Blu"], ["#1D5FD1", "Lago"], ["#5E5CE6", "Indaco"], ["#8E5BD8", "Viola"], ["#D6487E", "Rosa"],
+  ["#D7372F", "Rosso"], ["#D2522A", "Tramonto"], ["#C98A06", "Oro"], ["#2F6B3A", "Bosco"], ["#5C6B73", "Grafite"]];
+const BACKS = { tinta: "Del colore", neutro: "Neutro", caldo: "Caldo" };
+const ICON = {
+  mare: '<svg viewBox="0 0 44 44"><rect width="44" height="44" fill="#7FD0E8"/><path d="M0 24q5.5-5 11 0t11 0 11 0 11 0v20H0z" fill="#1C8FB8"/><path d="M0 31q5.5-4 11 0t11 0 11 0 11 0v13H0z" fill="#0E6A8C"/></svg>',
+  sakura: '<svg viewBox="0 0 44 44"><rect width="44" height="44" fill="#FBD6E3"/><g fill="#E8669A"><path d="M22 12c-3 3-3 7 0 10 3-3 3-7 0-10z"/><path d="M22 22c-4-1-7 1-8 4 4 1 7-1 8-4z"/><path d="M22 22c4-1 7 1 8 4-4 1-7-1-8-4z"/><path d="M22 22c-2 3-1 7 2 9 1-4 0-7-2-9z"/><path d="M22 22c2 3 1 7-2 9-1-4 0-7 2-9z"/></g><circle cx="22" cy="22" r="2" fill="#FFF1A8"/></svg>',
+  stelle: '<svg viewBox="0 0 44 44"><rect width="44" height="44" fill="#0B1233"/><path d="M30 9a8 8 0 1 0 6 13 7 7 0 1 1-6-13z" fill="#FFE29A"/><g fill="#fff"><circle cx="10" cy="12" r="1.2"/><circle cx="17" cy="30" r="1"/><circle cx="8" cy="34" r="1.4"/><circle cx="31" cy="35" r="1"/><circle cx="22" cy="18" r=".9"/></g></svg>',
+  aurora: '<svg viewBox="0 0 44 44"><defs><linearGradient id="au" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3AF0A6"/><stop offset=".55" stop-color="#2A6DF0"/><stop offset="1" stop-color="#B05BF0"/></linearGradient></defs><rect width="44" height="44" fill="#06121A"/><path d="M-4 30C8 8 20 26 30 10s14 4 18 0v14C38 30 26 22 14 34S0 38-4 40z" fill="url(#au)" opacity=".85"/></svg>',
+  autunno: '<svg viewBox="0 0 44 44"><rect width="44" height="44" fill="#F6DDBF"/><path d="M22 8c7 5 10 13 0 26C12 21 15 13 22 8z" fill="#D2601F"/><path d="M22 12v24" stroke="#8A3A10" stroke-width="1.6"/><circle cx="11" cy="31" r="4" fill="#E9A23B"/><circle cx="34" cy="14" r="3" fill="#B8331B"/></svg>',
+  neve: '<svg viewBox="0 0 44 44"><rect width="44" height="44" fill="#D9E8F8"/><g stroke="#3C7BD9" stroke-width="2.2" stroke-linecap="round"><path d="M22 9v26M10.7 15.5l22.6 13M10.7 28.5l22.6-13"/><path d="M19 11l3 3 3-3M19 33l3-3 3 3" fill="none"/></g></svg>',
+};
 const THEMES = {
-  classico: { name: "Classico", light: ["#007AFF", "#F2F2F7"], dark: ["#0A84FF", "#000000"] },
-  alpino: { name: "Alpino", light: ["#0F8A7A", "#EAF2F0"], dark: ["#3CC6B1", "#0B1312"] },
-  lago: { name: "Lago", light: ["#1D5FD1", "#EAF0FA"], dark: ["#6EA2FF", "#0A0F1A"] },
-  tramonto: { name: "Tramonto", light: ["#D2522A", "#FBEFE9"], dark: ["#FF8A5C", "#150D0A"] },
-  bosco: { name: "Bosco", light: ["#2F6B3A", "#EDF2E8"], dark: ["#7BC489", "#0C120C"] },
-  notte: { name: "Notte", light: ["#A99BFF", "#000000"], dark: ["#A99BFF", "#000000"], forceDark: true, cell: "#151318" },
+  predefinito: { name: "Predefinito" },
+  mare: { name: "Mare", light: ["#0E7C9E", "#E4F3F8"], dark: ["#4FC3E0", "#06141B"], deco: "mare", decobg: ["linear-gradient(180deg, #CDEFF8 0%, #E4F3F8 55%, #D2ECF4 100%)", "linear-gradient(180deg, #08202B 0%, #06141B 60%, #041017 100%)"] },
+  sakura: { name: "Sakura", light: ["#C93D73", "#FCEFF4"], dark: ["#FF8FB8", "#1A0D12"], deco: "sakura", decobg: ["linear-gradient(180deg, #FBE1EA 0%, #FCEFF4 60%, #FFF6F9 100%)", "linear-gradient(180deg, #2A1220 0%, #1A0D12 70%)"] },
+  stelle: { name: "Stelle", light: ["#FFD36E", "#070B1F"], dark: ["#FFD36E", "#070B1F"], forceDark: true, cell: "#121833", deco: "stelle", onAccent: "#1A1405",
+    decobg: ["radial-gradient(120% 70% at 70% 0%, #1B2559 0%, #0B1233 45%, #050816 100%)", "radial-gradient(120% 70% at 70% 0%, #1B2559 0%, #0B1233 45%, #050816 100%)"],
+    lockbg: "radial-gradient(120% 70% at 70% 0%, #2A3A80 0%, #0B1233 50%, #03050F 100%)" },
+  aurora: { name: "Aurora", light: ["#5BE7AE", "#050B12"], dark: ["#5BE7AE", "#050B12"], forceDark: true, cell: "#0F1A22", deco: "aurora", onAccent: "#04140C",
+    decobg: ["linear-gradient(180deg, #071824 0%, #050B12 60%)", "linear-gradient(180deg, #071824 0%, #050B12 60%)"],
+    lockbg: "linear-gradient(160deg, #0F6B5A 0%, #1B3D86 45%, #3B1D5E 75%, #05080F 100%)" },
+  autunno: { name: "Autunno", light: ["#B8501A", "#F8EEE3"], dark: ["#F09A5A", "#160E08"], deco: "autunno", decobg: ["linear-gradient(180deg, #F6E1C9 0%, #F8EEE3 60%)", "linear-gradient(180deg, #24150B 0%, #160E08 70%)"] },
+  neve: { name: "Neve", light: ["#2F6FCC", "#EEF4FB"], dark: ["#8DB8FF", "#0A1019"], deco: "neve", decobg: ["linear-gradient(180deg, #DCE9F8 0%, #EEF4FB 60%, #F7FAFE 100%)", "linear-gradient(180deg, #0F1A2B 0%, #0A1019 70%)"] },
 };
 const mq = window.matchMedia("(prefers-color-scheme: dark)");
+// mescola due colori #rrggbb (p = quota del primo, 0..1)
+function mix(a, b, p) {
+  const h = (x) => [1, 3, 5].map((i) => parseInt(x.slice(i, i + 2), 16));
+  const A1 = h(a), B1 = h(b);
+  return "#" + A1.map((v, i) => Math.round(v * p + B1[i] * (1 - p)).toString(16).padStart(2, "0")).join("");
+}
+const lum = (c) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16) / 255); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+function themeColors(dark) {
+  const st = S.settings, t = THEMES[st.theme] || THEMES.predefinito;
+  if (t.light) { const [accent, bg] = dark ? t.dark : t.light; return { accent, bg, cell: dark ? (t.cell || "#1C1C1E") : "#FFFFFF", t }; }
+  const base = st.accent || ACCENTS[0][0];
+  const accent = dark ? mix(base, "#FFFFFF", lum(base) > .5 ? 1 : .72) : base;
+  const back = st.back || "tinta";
+  const bg = back === "neutro" ? (dark ? "#000000" : "#F2F2F7") : back === "caldo" ? (dark ? "#14110D" : "#F7F1E8") : dark ? mix(base, "#0A0A0B", .1) : mix(base, "#F6F7F7", .09);
+  return { accent, bg, cell: dark ? (back === "tinta" ? mix(base, "#1C1C1E", .06) : "#1C1C1E") : "#FFFFFF", t };
+}
+let decoKey = "";
 function applyTheme() {
-  const t = THEMES[S.settings.theme] || THEMES.alpino;
+  const st = S.settings, t0 = THEMES[st.theme] || THEMES.predefinito;
   const sysDark = A && A.isNightMode ? A.isNightMode() : mq.matches;
-  const dark = t.forceDark || S.settings.mode === "scuro" || (S.settings.mode === "sistema" && sysDark);
-  const [accent, bg] = dark ? t.dark : t.light;
-  const cell = dark ? (t.cell || "#1C1C1E") : "#FFFFFF";
-  const v = { "--bg": bg, "--cell": cell, "--accent": accent, "--accent-soft": `color-mix(in srgb, ${accent} 20%, ${cell})`,
-    "--on-accent": dark ? "#0B0B0B" : "#FFFFFF", "--fg": dark ? "#F2F2F7" : "#14201E", "--sep": dark ? "#38383A" : "#DCDFE0",
+  const dark = t0.forceDark || st.mode === "scuro" || (st.mode === "sistema" && sysDark);
+  const { accent, bg, cell, t } = themeColors(dark);
+  const v = { "--bg": bg, "--cell": cell, "--accent": accent, "--accent-soft": mix(accent, cell, .2),
+    "--on-accent": t.onAccent || (lum(accent) > .55 ? "#0B0B0B" : "#FFFFFF"), "--fg": dark ? "#F2F2F7" : "#14201E", "--sep": dark ? mix(cell, "#FFFFFF", .8) : "#DCDFE0",
     "--ink2": dark ? "#8D8D93" : "#6F7C79", "--late": dark ? "#FF6961" : "#D7372F", "--ok": dark ? "#5FD38D" : "#1F9D5C",
     "--warn": dark ? "#F0A35A" : "#B4540A", "--switch-off": dark ? "#39393D" : "#E3E3E8", "--banner": dark ? "rgb(44 44 46 / .96)" : "rgb(245 245 247 / .96)" };
   const root = document.documentElement;
   for (const k in v) root.style.setProperty(k, v[k]);
+  if (t.lockbg) root.style.setProperty("--lockbg", t.lockbg); else root.style.removeProperty("--lockbg");
+  if (t.decobg) root.style.setProperty("--decobg", t.decobg[dark ? 1 : 0]); else root.style.removeProperty("--decobg");
   root.style.colorScheme = dark ? "dark" : "light";
+  root.classList.toggle("has-deco", !!t.deco);
+  const key = (t.deco || "") + dark;
+  if (key !== decoKey) { decoKey = key; const d = document.getElementById("deco"); if (d) d.innerHTML = t.deco ? buildDeco(t.deco, dark, accent) : ""; }
   if (A && A.setBars) try { A.setBars(bg, cell, !dark); } catch (e) {}
   const tc = document.getElementById("themeColor"); if (tc) tc.setAttribute("content", bg);
+}
+/** Disegna lo sfondo animato del tema. */
+function buildDeco(kind, dark, accent) {
+  let seed = 7; const r = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  let h = "";
+  const fallers = (n, svgFn, minS, maxS, minD, maxD) => {
+    for (let i = 0; i < n; i++) {
+      const size = minS + r() * (maxS - minS), dur = minD + r() * (maxD - minD);
+      h += `<span class="p" style="left:${(r() * 100).toFixed(1)}%;width:${size.toFixed(0)}px;height:${size.toFixed(0)}px;animation-duration:${dur.toFixed(1)}s;animation-delay:${(-r() * dur).toFixed(1)}s;--dx:${(-60 + r() * 120).toFixed(0)}px;--rot:${(r() > .5 ? 1 : -1) * (180 + r() * 360).toFixed(0)}deg;opacity:${(.55 + r() * .4).toFixed(2)}">${svgFn(i)}</span>`;
+    }
+  };
+  if (kind === "sakura") {
+    const cols = dark ? ["#FF9CC2", "#F7B6CF", "#E8779F"] : ["#F4A3C1", "#F7BBD2", "#E77FA6"];
+    fallers(16, (i) => `<svg viewBox="0 0 20 20"><path d="M10 1C5.5 5 5 11 10 19c5-8 4.5-14 0-18z" fill="${cols[i % 3]}"/><path d="M10 1l-1.2 3h2.4z" fill="${dark ? "#1A0D12" : "#FCEFF4"}"/></svg>`, 12, 22, 9, 17);
+  } else if (kind === "autunno") {
+    const cols = ["#D2601F", "#E9A23B", "#B8331B", "#C98A06"];
+    fallers(13, (i) => `<svg viewBox="0 0 20 20"><path d="M10 1c4.5 3 6.5 8.5 0 17C3.5 9.5 5.5 4 10 1z" fill="${cols[i % 4]}"/><path d="M10 4v15" stroke="rgb(0 0 0 / .25)" stroke-width="1"/></svg>`, 16, 28, 10, 18);
+  } else if (kind === "neve") {
+    const c = dark ? "#FFFFFF" : "#8FB4E6";
+    fallers(22, (i) => i % 3 ? `<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="6" fill="${c}"/></svg>` : `<svg viewBox="0 0 20 20" stroke="${c}" stroke-width="1.8" stroke-linecap="round"><path d="M10 1v18M2.2 5.5l15.6 9M2.2 14.5l15.6-9"/></svg>`, 5, 16, 8, 16);
+  } else if (kind === "stelle") {
+    for (let i = 0; i < 46; i++) { const s = 1 + r() * 2.2; h += `<span class="star" style="left:${(r() * 100).toFixed(1)}%;top:${(r() * 100).toFixed(1)}%;width:${s.toFixed(1)}px;height:${s.toFixed(1)}px;animation-duration:${(2 + r() * 4).toFixed(1)}s;animation-delay:${(-r() * 5).toFixed(1)}s"></span>`; }
+    h += `<span class="shoot" style="top:14%;right:-20px"></span><span class="shoot" style="top:42%;right:10%;animation-delay:4.5s"></span>`;
+    h += `<span class="shoot" style="top:70%;right:30%;animation-delay:7s"></span>`;
+  } else if (kind === "aurora") {
+    h += `<span class="glow" style="left:-20%;top:-10%;width:90%;height:38%;background:#2FE0A0;animation-duration:11s"></span>`;
+    h += `<span class="glow" style="right:-25%;top:4%;width:85%;height:34%;background:#3A6DF0;animation-duration:14s;animation-delay:-4s"></span>`;
+    h += `<span class="glow" style="left:10%;top:18%;width:70%;height:26%;background:#A64DF0;opacity:.35;animation-duration:17s;animation-delay:-8s"></span>`;
+    for (let i = 0; i < 24; i++) { const s = 1 + r() * 1.6; h += `<span class="star" style="left:${(r() * 100).toFixed(1)}%;top:${(30 + r() * 70).toFixed(1)}%;width:${s.toFixed(1)}px;height:${s.toFixed(1)}px;animation-duration:${(2 + r() * 4).toFixed(1)}s;animation-delay:${(-r() * 5).toFixed(1)}s"></span>`; }
+  } else if (kind === "mare") {
+    const c1 = dark ? "rgb(79 195 224 / .16)" : "rgb(14 124 158 / .13)", c2 = dark ? "rgb(79 195 224 / .26)" : "rgb(14 124 158 / .22)";
+    const wave = (c, amp) => `<svg viewBox="0 0 800 100" preserveAspectRatio="none"><path d="M0 ${50 - amp}q100 ${-amp} 200 0t200 0 200 0 200 0V100H0z" fill="${c}"/></svg>`;
+    h += `<div class="wave" style="height:170px;animation-duration:22s">${wave(c1, 14)}</div>`;
+    h += `<div class="wave" style="height:120px;animation-duration:15s;animation-direction:reverse">${wave(c2, 10)}</div>`;
+    for (let i = 0; i < 10; i++) { const s = 5 + r() * 12; h += `<span class="bub" style="left:${(r() * 100).toFixed(1)}%;width:${s.toFixed(0)}px;height:${s.toFixed(0)}px;animation-duration:${(10 + r() * 12).toFixed(1)}s;animation-delay:${(-r() * 20).toFixed(1)}s;border-color:${dark ? "rgb(255 255 255 / .35)" : "rgb(14 124 158 / .35)"}"></span>`; }
+  }
+  return h;
 }
 mq.addEventListener && mq.addEventListener("change", applyTheme);
 
 // ---------- dati ----------
 const KEY = "qa.data.v1";
 const DEFAULT = () => ({ v: 1, subs: [], payments: {}, reminders: [], contacts: {},
-  settings: { theme: "alpino", mode: "sistema", twint: "", sign: "", fu: 5, lock: true, lockDelay: 0, lockMode: null, pinHash: "", pinSalt: "", webauthnId: "" } });
+  settings: { theme: "predefinito", accent: "#0F8A7A", back: "tinta", mode: "sistema", twint: "", sign: "", fu: 5, lock: true, lockDelay: 0, lockMode: null, pinHash: "", pinSalt: "", webauthnId: "" } });
+// temi delle versioni precedenti → Predefinito con lo stesso colore
+function migrateTheme(st) {
+  const old = { classico: ["#007AFF", "neutro"], alpino: ["#0F8A7A", "tinta"], lago: ["#1D5FD1", "tinta"], tramonto: ["#D2522A", "tinta"], bosco: ["#2F6B3A", "tinta"], notte: ["#8E5BD8", "neutro"] }[st.theme];
+  if (old) { if (st.theme === "notte") st.mode = "scuro"; st.theme = "predefinito"; st.accent = old[0]; st.back = old[1]; }
+}
 let S = load();
 function load() {
   let raw = null;
   try { raw = A && A.loadData ? A.loadData() : localStorage.getItem(KEY); } catch (e) {}
   if (!raw) { try { raw = localStorage.getItem(KEY); } catch (e) {} }
-  try { const j = JSON.parse(raw); if (j && j.v === 1) return Object.assign(DEFAULT(), j, { settings: Object.assign(DEFAULT().settings, j.settings) }); } catch (e) {}
+  try { const j = JSON.parse(raw); if (j && j.v === 1) { const o = Object.assign(DEFAULT(), j, { settings: Object.assign(DEFAULT().settings, j.settings) }); migrateTheme(o.settings); return o; } } catch (e) {}
   return DEFAULT();
 }
 let saveTimer = null;
@@ -1339,16 +1450,40 @@ function renderSettings(v) {
   const st = S.settings;
   v.append(el("div", "sechead", "Tema"));
   const g1 = el("div", "group"), th = el("div", "themes");
+  if (!THEMES[st.theme]) st.theme = "predefinito";
   for (const [id, t] of Object.entries(THEMES)) {
-    const b = el("button", "theme" + (st.theme === id ? " sel" : "")); b.setAttribute("aria-pressed", st.theme === id);
-    b.innerHTML = `<span class="sw" style="background:${t.light[0]};box-shadow:inset 0 0 0 6px ${t.light[1]},inset 0 0 0 7px rgb(0 0 0 / .12)">${st.theme === id ? "✓" : ""}</span><span>${t.name}</span>`;
-    b.addEventListener("click", () => { st.theme = id; save(); render(); }); th.append(b);
+    const on = st.theme === id, b = el("button", "theme" + (on ? " sel" : "")); b.setAttribute("aria-pressed", on); b.dataset.theme = id;
+    const sw = id === "predefinito" ? `<span class="sw" style="background:${st.accent || ACCENTS[0][0]};box-shadow:inset 0 0 0 6px ${themeColors(false).bg},inset 0 0 0 7px rgb(0 0 0 / .12)"><b>${on ? "✓" : ""}</b></span>`
+      : `<span class="sw">${ICON[t.deco]}<b>${on ? "✓" : ""}</b></span>`;
+    b.innerHTML = `${sw}<span>${t.name}</span>`;
+    b.addEventListener("click", () => { st.theme = id; save(); applyTheme(); render(); }); th.append(b);
   }
   g1.append(th); v.append(g1);
+  if (st.theme === "predefinito") {
+    v.append(el("div", "sechead", "Colori"));
+    const gc = el("div", "group");
+    const rcl = el("div", "row"); rcl.append(el("span", "grow", "Colore principale"), el("span", "sub", (ACCENTS.find((a) => a[0] === (st.accent || ACCENTS[0][0])) || [, "Su misura"])[1])); gc.append(rcl);
+    const sws = el("div", "swatches");
+    const curA = (st.accent || ACCENTS[0][0]).toUpperCase();
+    for (const [hex, nm] of ACCENTS) {
+      const b = el("button", hex.toUpperCase() === curA ? "sel" : null, hex.toUpperCase() === curA ? "✓" : ""); b.style.background = hex; b.setAttribute("aria-label", nm); b.title = nm;
+      b.addEventListener("click", () => { st.accent = hex; save(); applyTheme(); render(); }); sws.append(b);
+    }
+    const custom = !ACCENTS.some((a) => a[0].toUpperCase() === curA);
+    const lb = el("label", custom ? "sel" : null); lb.title = "Scegli un colore"; lb.setAttribute("aria-label", "Scegli un colore");
+    if (custom) { lb.style.background = curA; lb.textContent = "✓"; }
+    const ci = el("input"); ci.type = "color"; ci.value = curA.toLowerCase(); ci.addEventListener("change", () => { st.accent = ci.value.toUpperCase(); save(); applyTheme(); render(); });
+    lb.append(ci); sws.append(lb); gc.append(sws);
+    const rb = el("div", "row"); rb.append(el("span", "grow", "Sfondo"));
+    const sb = el("div", "seg"); sb.style.flex = "0 1 230px";
+    for (const [val, lab] of Object.entries(BACKS)) { const b = el("button", (st.back || "tinta") === val ? "sel" : null, lab); b.addEventListener("click", () => { st.back = val; save(); applyTheme(); render(); }); sb.append(b); }
+    rb.append(sb); gc.append(rb);
+    v.append(gc, el("div", "secfoot", "L'ultimo cerchio colorato apre la tavolozza per un colore tutto tuo."));
+  } else v.append(el("div", "secfoot", `${THEMES[st.theme].name}: colori e sfondo animato. Le animazioni si fermano se nel telefono hai attivato "Riduci movimento".`));
   v.append(el("div", "sechead", "Aspetto"));
   const g2 = el("div", "group"), r2 = el("div", "row"), sg = el("div", "seg"), forced = !!(THEMES[st.theme] || {}).forceDark;
   for (const [val, lab] of [["sistema", "Automatico"], ["chiaro", "Chiaro"], ["scuro", "Scuro"]]) { const b = el("button", (forced ? val === "scuro" : st.mode === val) ? "sel" : null, lab); b.disabled = forced; b.addEventListener("click", () => { st.mode = val; save(); render(); }); sg.append(b); }
-  r2.append(sg); g2.append(r2); v.append(g2, el("div", "secfoot", forced ? "Il tema Notte è sempre scuro." : "Automatico segue l'impostazione del telefono."));
+  r2.append(sg); g2.append(r2); v.append(g2, el("div", "secfoot", forced ? `Il tema ${THEMES[st.theme].name} è sempre scuro.` : "Automatico segue l'impostazione del telefono."));
   // accesso: nessuno, Face ID / impronta, oppure un codice
   v.append(el("div", "sechead", "Accesso"));
   const g3 = el("div", "group"), mode = lockMode();
@@ -1406,7 +1541,7 @@ function renderSettings(v) {
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.9 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 2.0 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
@@ -1426,7 +1561,7 @@ function openBackup() {
     openSheet("Importa backup", (body) => {
       body.append(el("div", "secfoot", `Backup del ${when}: ${j.subs.length} abbonamenti, ${Object.values(j.payments || {}).reduce((a, o) => a + Object.keys(o).length, 0)} pagamenti e ${(j.reminders || []).length} promemoria.`),
         el("div", "secfoot", "Tocca “Sostituisci” per sostituire tutti i dati attuali con quelli del backup."));
-    }, () => { S = Object.assign(DEFAULT(), j, { settings: Object.assign(DEFAULT().settings, j.settings) }); delete S.exportedAt; save(); toast("Backup importato"); }, "Sostituisci");
+    }, () => { S = Object.assign(DEFAULT(), j, { settings: Object.assign(DEFAULT().settings, j.settings) }); delete S.exportedAt; migrateTheme(S.settings); applyTheme(); save(); toast("Backup importato"); }, "Sostituisci");
   };
   if (A && A.openFile) { window.__onFile = handle; A.openFile(); return; }
   const i = document.createElement("input"); i.type = "file"; i.accept = "application/json,.json";
