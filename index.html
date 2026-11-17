@@ -231,7 +231,9 @@ input, select, textarea { font-size: 16px !important } /* sotto 16px Safari ingr
 /* iPhone dalla Home: niente striscia di colore diverso sotto la barra delle schede */
 html { background: linear-gradient(var(--bg) 50%, var(--cell) 50%) fixed }
 body { background: transparent }
-#app { bottom: auto; height: 100%; height: 100dvh; background: var(--bg) }
+#app { bottom: auto; height: 100%; height: 100dvh; height: var(--apph, 100dvh); background: var(--bg) }
+/* Dalla Home dell'iPhone, iOS calcola l'altezza senza la barra di stato: l'app usa l'altezza vera dello schermo */
+.sheet, .lock { bottom: auto; height: 100%; height: 100dvh; height: var(--apph, 100dvh) }
 .sheet .bar2 { padding-left: max(10px, calc(var(--sl) - 6px)); padding-right: max(10px, calc(var(--sr) - 6px)) }
 @media (min-width: 390px) { html, body { font-size: 16px } }
 @media (max-width: 359px) { html, body { font-size: 14px } }
@@ -276,6 +278,19 @@ body { background: transparent }
 const A = window.Android || null;
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const STANDALONE = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+// iPhone dalla Home: l'altezza della pagina esclude la barra di stato e lascia una fascia nera in fondo.
+function fitScreen() {
+  if (!(/iPhone|iPod/.test(navigator.userAgent) && STANDALONE)) return;
+  const portrait = window.matchMedia("(orientation: portrait)").matches;
+  const full = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+  const gap = full - window.innerHeight;
+  // solo la differenza della barra di stato (non la tastiera aperta)
+  if (gap > 0 && gap <= 80) document.documentElement.style.setProperty("--apph", full + "px");
+  else document.documentElement.style.removeProperty("--apph");
+}
+fitScreen();
+window.addEventListener("resize", fitScreen);
+window.addEventListener("orientationchange", () => setTimeout(fitScreen, 300));
 
 // ---------- utilità ----------
 const $ = (id) => document.getElementById(id);
