@@ -216,6 +216,25 @@ button.d { cursor: pointer }
 .lock.intro h2 { animation: rise .5s ease-out .45s both }
 .lock.intro .gr { animation: rise .5s ease-out .55s both }
 .lock.intro .unlock, .lock.intro .note { animation: rise .55s ease-out .7s both }
+.lock .pinbox { width: 100%; display: flex; flex-direction: column; align-items: center }
+.lock.pinmode .body { padding-top: max(6vh, calc(14px + env(safe-area-inset-top, 0px))) }
+.lock.pinmode .ai-wrap { transform: scale(.7); margin: -14px 0 }
+.lock.pinmode h2 { margin-top: 8px; font-size: 1.3rem }
+.lock .linkbtn { border: 0; background: none; color: #fff; opacity: .85; font-weight: 700; margin-top: 12px; cursor: pointer; font-size: .9rem }
+.dots { display: flex; gap: 16px; justify-content: center; margin: 14px 0 18px }
+.dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor }
+.dots i.f { background: currentColor }
+.dots.shake { animation: shake .4s }
+@keyframes shake { 20%, 60% { transform: translateX(-10px) } 40%, 80% { transform: translateX(10px) } }
+.pad { display: grid; grid-template-columns: repeat(3, min(76px, 21vw)); gap: min(14px, 1.8vh) 22px; justify-content: center }
+.pad button { height: min(76px, 9.2vh); aspect-ratio: 1; border-radius: 50%; border: 0; background: rgb(255 255 255 / .2); color: #fff; font-size: 1.7rem; cursor: pointer; justify-self: center }
+.pad button.ghost { background: none; font-size: 1rem; font-weight: 700 }
+.pad button:active { background: rgb(255 255 255 / .4) }
+.pinsheet { display: flex; flex-direction: column; align-items: center; padding-top: 18px; color: var(--accent) }
+.pinsheet .ptitle { color: var(--fg); font-weight: 700; font-size: 1.1rem; text-align: center }
+.pinsheet .psub { color: var(--ink2); font-size: .85rem; text-align: center; margin-top: 4px; min-height: 1.2em }
+.pinsheet .pad button { background: var(--cell); color: var(--fg); box-shadow: 0 1px 2px rgb(0 0 0 / .08) }
+.pinsheet .pad button.ghost { background: none; box-shadow: none; color: var(--accent) }
 .lock.success .ai { transform: scale(1.12); box-shadow: 0 0 44px rgb(255 255 255 / .65) }
 .lock.opening { animation: openUp .55s ease-in forwards }
 @keyframes iconIn { from { transform: scale(.55); opacity: 0 } }
@@ -269,7 +288,9 @@ html.ios-pwa, html.ios-pwa body { height: var(--apph, 100%) }
     <div class="gr" id="lockGreet"></div>
     <div style="margin-top:auto;width:100%;display:flex;flex-direction:column;align-items:center">
       <div class="err" id="lockErr" hidden></div>
+      <div class="pinbox" id="lockPin" hidden></div>
       <button class="unlock" id="unlockBtn">Sblocca</button>
+      <button class="linkbtn" id="usePinBtn" hidden>Usa il codice</button>
       <div class="note">I tuoi dati restano solo su questo telefono.</div>
     </div>
   </div>
@@ -394,7 +415,7 @@ mq.addEventListener && mq.addEventListener("change", applyTheme);
 // ---------- dati ----------
 const KEY = "qa.data.v1";
 const DEFAULT = () => ({ v: 1, subs: [], payments: {}, reminders: [], contacts: {},
-  settings: { theme: "alpino", mode: "sistema", twint: "", sign: "", fu: 5, lock: true, lockDelay: 0 } });
+  settings: { theme: "alpino", mode: "sistema", twint: "", sign: "", fu: 5, lock: true, lockDelay: 0, lockMode: null, pinHash: "", pinSalt: "", webauthnId: "" } });
 let S = load();
 function load() {
   let raw = null;
@@ -836,11 +857,11 @@ function renderSubs(v) {
 // ---------- foglio a schermo intero ----------
 let sheetSave = null;
 function openSheet(title, build, onSave, saveLabel = "Salva") {
-  $("shTitle").textContent = title; $("shSave").textContent = saveLabel;
+  $("shTitle").textContent = title; $("shSave").textContent = saveLabel; $("shSave").hidden = false;
   const body = $("shBody"); body.textContent = ""; body.scrollTop = 0;
   sheetSave = onSave; build(body); $("sheet").hidden = false;
 }
-function closeSheet() { $("sheet").hidden = true; sheetSave = null; render(); }
+function closeSheet() { $("sheet").hidden = true; $("shSave").hidden = false; sheetSave = null; render(); }
 $("shCancel").addEventListener("click", closeSheet);
 $("shSave").addEventListener("click", () => { if (sheetSave && sheetSave() !== false) closeSheet(); });
 const setSaveEnabled = (ok) => { $("shSave").disabled = !ok; };
@@ -1328,25 +1349,30 @@ function renderSettings(v) {
   const g2 = el("div", "group"), r2 = el("div", "row"), sg = el("div", "seg"), forced = !!(THEMES[st.theme] || {}).forceDark;
   for (const [val, lab] of [["sistema", "Automatico"], ["chiaro", "Chiaro"], ["scuro", "Scuro"]]) { const b = el("button", (forced ? val === "scuro" : st.mode === val) ? "sel" : null, lab); b.disabled = forced; b.addEventListener("click", () => { st.mode = val; save(); render(); }); sg.append(b); }
   r2.append(sg); g2.append(r2); v.append(g2, el("div", "secfoot", forced ? "Il tema Notte è sempre scuro." : "Automatico segue l'impostazione del telefono."));
-  // accesso (solo nell'app Android, dove c'è lo sblocco del telefono)
-  const hasLock = !!A && (!A.hasLock || A.hasLock());
-  if (A) {
+  // accesso: nessuno, Face ID / impronta, oppure un codice
   v.append(el("div", "sechead", "Accesso"));
-  const g3 = el("div", "group"), r3 = el("div", "row"), l3 = el("label", "grow", "Blocca con impronta o PIN"); l3.htmlFor = "lockSw";
-  const s3 = el("input", "switch"); s3.type = "checkbox"; s3.id = "lockSw"; s3.checked = st.lock && hasLock; s3.disabled = !hasLock;
-  s3.addEventListener("change", () => {
-    if (s3.checked) { st.lock = true; save(); render(); return; }
-    s3.checked = true; authenticate((ok) => { if (ok) { st.lock = false; save(); } render(); });
-  });
-  r3.append(l3, s3); g3.append(r3);
-  if (st.lock && hasLock) {
+  const g3 = el("div", "group"), mode = lockMode();
+  const r3 = el("div", "row"); const s3 = el("div", "seg"); s3.id = "lockSeg";
+  for (const [val, lab] of [["nessuno", "Nessuno"], ["bio", BIO_NAME], ["pin", "Codice"]]) {
+    const b = el("button", mode === val ? "sel" : null, lab); b.dataset.mode = val;
+    if (val === "bio" && !bioAvailable()) b.disabled = true;
+    b.addEventListener("click", () => { if (val !== mode) changeLockMode(val); }); s3.append(b);
+  }
+  r3.append(s3); g3.append(r3);
+  if (mode !== "nessuno") {
     const r4 = el("div", "row"); r4.append(el("span", "grow", "Richiedi"));
     const s4 = el("div", "seg"); s4.style.flex = "0 1 200px";
     for (const [val, lab] of [[0, "Subito"], [60, "1 min"], [300, "5 min"]]) { const b = el("button", st.lockDelay === val ? "sel" : null, lab); b.addEventListener("click", () => { st.lockDelay = val; save(); render(); }); s4.append(b); }
     r4.append(s4); g3.append(r4);
+    if (st.pinHash && (mode === "pin" || !A)) {
+      const r5 = el("div", "row tap"); r5.append(el("span", "grow link", "Cambia codice"));
+      r5.addEventListener("click", () => verifyLock(() => setPinFlow(() => toast("Codice cambiato")))); g3.append(r5);
+    }
   }
-  v.append(g3, el("div", "secfoot", !hasLock ? "Per bloccare l'app imposta prima un PIN, una sequenza o l'impronta nelle impostazioni del telefono." : st.lock ? "All'apertura l'app chiede l'impronta o il PIN del telefono. Per disattivare il blocco devi identificarti." : "L'app si apre direttamente, senza impronta né PIN."));
-  }
+  const bioFoot = A ? "l'impronta, il volto o il PIN del telefono" : `${BIO_NAME} (se non va, il codice di riserva)`;
+  v.append(g3, el("div", "secfoot", mode === "nessuno" ? "L'app si apre direttamente." + (!bioAvailable() ? (A ? " Per usare l'impronta imposta prima un blocco schermo nel telefono." : ` ${BIO_NAME} qui non è disponibile: usa il codice.`) : "") :
+    mode === "bio" ? `All'apertura l'app chiede ${bioFoot}. Per cambiare devi prima sbloccare.` :
+    "All'apertura l'app chiede il codice di 4 cifre. Se lo dimentichi non si può recuperare: tieni un backup."));
   // messaggi
   v.append(el("div", "sechead", "Messaggi"));
   const g5 = el("div", "group");
@@ -1380,7 +1406,7 @@ function renderSettings(v) {
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.7 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.8 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
@@ -1437,32 +1463,158 @@ function loadSample() {
    Schermata di accesso (impronta o PIN del telefono)
    ========================================================================== */
 let authCb = null;
+const BIO_NAME = A ? "Impronta" : IS_IOS ? (/iPhone|iPod/.test(navigator.userAgent) ? "Face ID" : "Face/Touch ID") : /Mac/.test(navigator.userAgent) ? "Touch ID" : "Impronta";
+let webBioOk = false;
+if (!A && window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable && window.isSecureContext)
+  PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then((ok) => { webBioOk = !!ok; if (tab === "impostazioni") render(); }).catch(() => {});
+const bioAvailable = () => A ? (!A.hasLock || A.hasLock()) && !!A.authenticate : webBioOk;
+function lockMode() {
+  const st = S.settings;
+  if (!st.lockMode) st.lockMode = A && st.lock ? "bio" : "nessuno"; // versioni precedenti
+  if (st.lockMode === "pin" && !st.pinHash) return "nessuno";
+  if (st.lockMode === "bio" && !A && !st.webauthnId) return "nessuno";
+  return st.lockMode;
+}
+// codice: impronta con sale, ripetuta (resta solo sul dispositivo)
+function hashPin(pin, salt) {
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57, str = salt + ":" + pin;
+  for (let r = 0; r < 2000; r++) {
+    for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    str = (h1 >>> 0).toString(16) + (h2 >>> 0).toString(16);
+  }
+  return str;
+}
+const checkPin = (pin) => !!S.settings.pinHash && hashPin(pin, S.settings.pinSalt) === S.settings.pinHash;
+const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = (str) => Uint8Array.from(atob(str), (c) => c.charCodeAt(0));
+const rnd = (n) => crypto.getRandomValues(new Uint8Array(n));
+async function webBioRegister() {
+  const cred = await navigator.credentials.create({ publicKey: {
+    challenge: rnd(32), rp: { name: "Quote Abbonamenti" }, user: { id: rnd(16), name: "Quote Abbonamenti", displayName: "Quote Abbonamenti" },
+    pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+    authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000 } });
+  return b64(cred.rawId);
+}
+async function webBioCheck() {
+  const res = await navigator.credentials.get({ publicKey: { challenge: rnd(32), allowCredentials: [{ type: "public-key", id: unb64(S.settings.webauthnId), transports: ["internal"] }], userVerification: "required", timeout: 60000 } });
+  return !!res;
+}
+/** Sblocco con il sistema (impronta / Face ID). */
 function authenticate(cb) {
-  if (!A || !A.authenticate) { cb(true); return; }
-  authCb = cb; A.authenticate();
+  if (A) { if (!A.authenticate) { cb(true); return; } authCb = cb; A.authenticate(); return; }
+  if (!S.settings.webauthnId) { cb(false); return; }
+  webBioCheck().then((ok) => cb(ok), () => cb(false));
 }
 window.onAuthResult = (ok) => { const cb = authCb; authCb = null; if (cb) cb(!!ok); };
+/** Tastierino del codice. onPin riceve 4 cifre e risponde true (fatto) o un messaggio d'errore. */
+function pinPad(host, onPin, extra) {
+  host.textContent = "";
+  let code = "";
+  const dots = el("div", "dots"); for (let i = 0; i < 4; i++) dots.append(el("i"));
+  const paint = () => [...dots.children].forEach((d, i) => d.classList.toggle("f", i < code.length));
+  const pad = el("div", "pad");
+  const press = (k) => {
+    if (k === "⌫") code = code.slice(0, -1); else if (code.length < 4) code += k;
+    paint();
+    if (code.length === 4) { const pin = code; setTimeout(() => { const r = onPin(pin); if (r !== true) { code = ""; paint(); dots.classList.remove("shake"); void dots.offsetWidth; dots.classList.add("shake"); if (A && A.vibrate) A.vibrate(); } }, 120); }
+  };
+  ["1", "2", "3", "4", "5", "6", "7", "8", "9", extra ? extra.label : "", "0", "⌫"].forEach((k, i) => {
+    const b = el("button", i === 9 || i === 11 ? "ghost" : null, k);
+    if (i === 9) { if (extra) b.addEventListener("click", extra.onClick); else b.style.visibility = "hidden"; }
+    else { b.setAttribute("aria-label", k === "⌫" ? "Cancella" : k); b.addEventListener("click", () => press(k)); }
+    pad.append(b);
+  });
+  host.append(dots, pad); paint();
+}
+/** Foglio per scegliere un nuovo codice (due volte). */
+function setPinFlow(done) {
+  let first = null;
+  openSheet("Codice d'accesso", (body) => {
+    const box = el("div", "pinsheet"), t = el("div", "ptitle", "Scegli un codice di 4 cifre"), sub = el("div", "psub", "Lo chiederà l'app all'apertura."), host = el("div");
+    box.append(t, sub, host); body.append(box);
+    $("shSave").hidden = true;
+    pinPad(host, (pin) => {
+      if (first === null) { if (/^(\d)\1{3}$/.test(pin) || pin === "1234") { sub.textContent = "Troppo facile: scegline un altro."; return false; } first = pin; t.textContent = "Ripeti il codice"; sub.textContent = ""; return false; }
+      if (pin !== first) { first = null; t.textContent = "Scegli un codice di 4 cifre"; sub.textContent = "I codici non coincidono: riprova."; return false; }
+      const st = S.settings; st.pinSalt = b64(rnd(12)); st.pinHash = hashPin(pin, st.pinSalt); save();
+      $("shSave").hidden = false; closeSheet(); done(); return true;
+    });
+  }, () => true);
+  // le cifre sbagliate non devono chiudere: il pulsante Salva non serve
+}
+/** Chiede lo sblocco attuale prima di cambiare l'accesso. */
+let lockVerifiedUntil = 0;
+function verifyLock(ok) {
+  const mode = lockMode();
+  if (mode === "nessuno" || Date.now() < lockVerifiedUntil) { ok(); return; }
+  const done = ok; ok = () => { lockVerifiedUntil = Date.now() + 60000; done(); };
+  if (mode === "bio" && (A || !S.settings.pinHash)) { authenticate((r) => { if (r) ok(); else toast("Sblocco non riuscito"); }); return; }
+  openSheet("Conferma", (body) => {
+    const box = el("div", "pinsheet"), sub = el("div", "psub"), host = el("div");
+    box.append(el("div", "ptitle", "Inserisci il codice attuale"), sub, host); body.append(box); $("shSave").hidden = true;
+    pinPad(host, (pin) => { if (!checkPin(pin)) { sub.textContent = "Codice sbagliato"; return false; } $("shSave").hidden = false; closeSheet(); ok(); return true; },
+      mode === "bio" ? { label: BIO_NAME === "Face ID" ? "Face ID" : "Dito", onClick: () => authenticate((r) => { if (r) { $("shSave").hidden = false; closeSheet(); ok(); } }) } : null);
+  }, () => true);
+}
+function changeLockMode(to) {
+  const st = S.settings;
+  // Face ID sul web va chiesto direttamente dal tocco: prima si conferma, poi si ritocca
+  if (to === "bio" && !A && lockMode() !== "nessuno" && Date.now() >= lockVerifiedUntil) { verifyLock(() => toast(`Confermato: ora tocca di nuovo «${BIO_NAME}»`)); return; }
+  verifyLock(() => {
+    if (to === "nessuno") { st.lockMode = "nessuno"; st.lock = false; save(); render(); toast("Accesso libero"); return; }
+    if (to === "pin") { setPinFlow(() => { st.lockMode = "pin"; st.lock = true; save(); render(); toast("Codice attivato"); }); return; }
+    if (A) { authenticate((r) => { if (!r) { toast("Sblocco non riuscito"); return; } st.lockMode = "bio"; st.lock = true; save(); render(); toast(BIO_NAME + " attivata"); }); return; }
+    // web: Face ID con codice di riserva
+    const enable = () => webBioRegister().then((id) => { st.webauthnId = id; st.lockMode = "bio"; st.lock = true; save(); render(); toast(BIO_NAME + " attivato"); },
+      () => toast(`${BIO_NAME} non attivato`));
+    if (st.pinHash) enable(); else { toast("Prima scegli un codice di riserva"); setPinFlow(() => { render(); toast(`Ora conferma con ${BIO_NAME}: tocca di nuovo «${BIO_NAME}»`); }); }
+  });
+}
 function greeting() { const h = now().getHours(), b = h < 12 ? "Buongiorno" : h < 18 ? "Buon pomeriggio" : "Buonasera", nm = S.settings.sign.trim(); return nm ? `${b}, ${nm}` : b; }
+let pinFails = 0, pinWaitUntil = 0;
 function showLock() {
-  const L = $("lock"); $("lockGreet").textContent = greeting(); $("lockErr").hidden = true;
-  L.classList.remove("opening", "success"); L.hidden = false; void L.offsetWidth; L.classList.add("intro");
-  setTimeout(tryUnlock, 900);
+  const L = $("lock"), mode = lockMode(); $("lockGreet").textContent = greeting(); $("lockErr").hidden = true;
+  L.classList.remove("opening", "success"); L.classList.toggle("pinmode", mode === "pin"); L.hidden = false; void L.offsetWidth; L.classList.add("intro");
+  $("unlockBtn").hidden = mode === "pin"; $("unlockBtn").textContent = mode === "bio" && !A ? `Sblocca con ${BIO_NAME}` : "Sblocca";
+  $("usePinBtn").hidden = !(mode === "bio" && S.settings.pinHash && !A);
+  $("lockPin").hidden = mode !== "pin";
+  if (mode === "pin") showPinOnLock();
+  else if (A) setTimeout(tryUnlock, 900); // sul web Face ID parte solo toccando il pulsante
+}
+function showPinOnLock() {
+  const L = $("lock"); L.classList.add("pinmode"); $("lockPin").hidden = false; $("unlockBtn").hidden = true; $("usePinBtn").hidden = true;
+  pinPad($("lockPin"), (pin) => {
+    if (Date.now() < pinWaitUntil) { $("lockErr").textContent = `Troppi tentativi: aspetta ${Math.ceil((pinWaitUntil - Date.now()) / 1000)} secondi.`; $("lockErr").hidden = false; return false; }
+    if (!checkPin(pin)) { pinFails++; if (pinFails % 5 === 0) pinWaitUntil = Date.now() + 30000; $("lockErr").textContent = pinFails % 5 === 0 ? "Troppi tentativi: aspetta 30 secondi." : "Codice sbagliato"; $("lockErr").hidden = false; return false; }
+    pinFails = 0; openLock(); return true;
+  }, lockMode() === "bio" && !A ? { label: BIO_NAME === "Face ID" ? "Face ID" : "Dito", onClick: tryUnlock } : null);
+}
+function openLock() {
+  const L = $("lock"); if (A && A.vibrate) A.vibrate(); $("lockErr").hidden = true;
+  L.classList.add("success"); setTimeout(() => { L.classList.add("opening"); setTimeout(() => { L.hidden = true; L.classList.remove("intro", "opening", "success", "pinmode"); }, 560); }, 400);
 }
 function tryUnlock() {
   if ($("lock").hidden) return;
   authenticate((ok) => {
-    const L = $("lock");
-    if (!ok) { $("lockErr").textContent = "Sblocco annullato. Tocca “Sblocca” per riprovare."; $("lockErr").hidden = false; return; }
-    if (A && A.vibrate) A.vibrate();
-    L.classList.add("success"); setTimeout(() => { L.classList.add("opening"); setTimeout(() => { L.hidden = true; L.classList.remove("intro", "opening", "success"); }, 560); }, 400);
+    if (!ok) { $("lockErr").textContent = A ? "Sblocco annullato. Tocca “Sblocca” per riprovare." : `${BIO_NAME} non riuscito. Riprova o usa il codice.`; $("lockErr").hidden = false; return; }
+    openLock();
   });
 }
 $("unlockBtn").addEventListener("click", tryUnlock);
+$("usePinBtn").addEventListener("click", showPinOnLock);
 $("lockIcon").innerHTML = APPICON;
 [["musica", 12, .05, 26, 34], ["video", 80, .35, 31, 40], ["cloud", 32, .62, 28, 30], ["giochi", 88, .85, 35, 32], ["fitness", 58, .18, 30, 28], ["notizie", 4, .5, 37, 30], ["software", 68, .72, 27, 34]].forEach(([c, x, ph, secs, size]) => {
   const w = el("span"); w.innerHTML = tile(c, size); const t = w.firstChild; t.style.left = x + "%"; t.style.animationDuration = secs + "s"; t.style.animationDelay = (-ph * secs) + "s"; $("lockTiles").append(t);
 });
-const lockActive = () => S.settings.lock && (!A || !A.hasLock || A.hasLock()) && !!A;
+const lockActive = () => { const m = lockMode(); return m === "pin" || (m === "bio" && (A ? bioAvailable() : !!S.settings.webauthnId)); };
+// web: richiede lo sblocco quando torni nell'app dopo il tempo scelto
+let hiddenAt = 0;
+if (!A) document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  if (hiddenAt && lockActive() && Date.now() - hiddenAt >= (S.settings.lockDelay || 0) * 1000 && $("lock").hidden && $("sheet").hidden) showLock();
+});
 
 // ---------- chiamate da Android ----------
 window.onAppResume = (msAway) => {
