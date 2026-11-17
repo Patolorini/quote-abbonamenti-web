@@ -98,6 +98,7 @@ select.in { appearance: none; -webkit-appearance: none; text-align-last: right; 
 .stats b { font-size: .95rem; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 .bar { height: 6px; border-radius: 3px; background: var(--accent-soft); overflow: hidden; margin: 0 16px 12px }
 .bar i { display: block; height: 100%; background: var(--ok) }
+.pasthead { padding: 10px 16px 2px; font-size: .74rem; text-transform: uppercase; letter-spacing: .02em; color: var(--late); font-weight: 700; border-top: 0.5px solid var(--sep) }
 .latebar { padding: 0 16px 12px; font-size: .85rem; font-weight: 700; color: var(--late) }
 .ck { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--sep); background: transparent; display: grid; place-items: center; color: #fff; cursor: pointer; flex: none; font-size: .85rem; padding: 0 }
 .ck.on { background: var(--ok); border-color: var(--ok) }
@@ -524,8 +525,27 @@ function intlDigits(phone) {
   if (d.startsWith("0")) return "41" + d.slice(1);
   return d;
 }
-function messageFor(p, owed, y, m) {
-  const lines = [`Ciao ${p.name}! Quote abbonamenti di ${MONTHS[m]} ${y}:`, ...owed.map((i) => `• ${i.sub.name}: ${chf(i.share)}`), `Totale: ${chf(owed.reduce((a, i) => a + i.share, 0))}.`];
+// quote non pagate dei mesi prima di (y, m), per persona (al massimo 5 anni indietro)
+function arrearsBefore(y, m) {
+  const out = new Map();
+  if (!S.subs.length) return out;
+  const first = new Date(Math.min(...S.subs.map((s) => startOfDay(new Date(s.createdAt || 0)).getTime())));
+  let d = new Date(Math.max(first.getFullYear(), y - 5), first.getFullYear() < y - 5 ? 0 : first.getMonth(), 1);
+  const stop = new Date(y, m, 1);
+  for (; d < stop; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
+    for (const p of peopleFor(d.getFullYear(), d.getMonth())) for (const it of p.items) {
+      if (it.paid) continue;
+      if (!out.has(p.key)) out.set(p.key, { name: p.name, items: [] });
+      out.get(p.key).items.push({ ...it, y: d.getFullYear(), m: d.getMonth() });
+    }
+  }
+  return out;
+}
+function messageFor(p, owed, y, m, past = []) {
+  const lines = [`Ciao ${p.name}! Quote abbonamenti di ${MONTHS[m]} ${y}:`, ...owed.map((i) => `• ${i.sub.name}: ${chf(i.share)}`)];
+  if (!owed.length) lines[0] = `Ciao ${p.name}! Quote abbonamenti ancora da pagare:`;
+  if (past.length) { if (owed.length) lines.push("Mesi passati ancora da pagare:"); past.forEach((i) => lines.push(`• ${i.sub.name} (${MONTHS[i.m]}${i.y !== y ? " " + i.y : ""}): ${chf(i.share)}`)); }
+  lines.push(`Totale: ${chf([...owed, ...past].reduce((a, i) => a + i.share, 0))}.`);
   if (owed.some((i) => i.late > 0)) lines.push(`Era da pagare entro ${fmtShort(new Date(Math.min(...owed.map((i) => i.due))))}.`);
   const t = S.settings.twint.trim();
   lines.push(t ? `Puoi mandarmeli con TWINT al ${t}? Grazie!` : "Puoi mandarmeli con TWINT? Grazie!");
@@ -689,6 +709,7 @@ function emptyState(v, title, text, actions) {
 }
 
 // ---------- Questo mese ----------
+const expandedPast = new Set();
 function renderMonth(v) {
   const { y, m } = view, key = mkey(y, m);
   setTop(`${cap(MONTHS[m])} ${y}`,
@@ -702,19 +723,24 @@ function renderMonth(v) {
     return;
   }
   const people = peopleFor(y, m);
+  const arr = arrearsBefore(y, m);
+  for (const [pk, a] of arr) if (!people.some((p) => p.key === pk)) people.push({ key: pk, name: a.name, items: [] });
+  people.sort((a, b) => a.name.localeCompare(b.name));
+  const pastTotal = [...arr.values()].reduce((a, x) => a + x.items.reduce((b, i) => b + i.share, 0), 0);
   const all = people.flatMap((p) => p.items);
   const total = all.reduce((a, i) => a + i.share, 0), paid = all.filter((i) => i.paid).reduce((a, i) => a + i.share, 0);
-  const lateCount = people.filter((p) => p.items.some((i) => i.late > 0)).length;
+  const lateCount = people.filter((p) => p.items.some((i) => i.late > 0) || arr.has(p.key)).length;
   const sum = el("div", "group");
   sum.innerHTML = `<div class="stats"><div><small>Da incassare</small><b>${chf(total)}</b></div><div><small>Incassato</small><b style="color:var(--ok)">${chf(paid)}</b></div><div><small>Mancante</small><b style="color:var(--warn)">${chf(total - paid)}</b></div></div>
-    <div class="bar"><i style="width:${total ? paid / total * 100 : 0}%"></i></div>${lateCount ? `<div class="latebar">${lateCount === 1 ? "1 persona è in ritardo" : lateCount + " persone sono in ritardo"}</div>` : ""}`;
+    <div class="bar"><i style="width:${total ? paid / total * 100 : 0}%"></i></div>${lateCount ? `<div class="latebar">${lateCount === 1 ? "1 persona è in ritardo" : lateCount + " persone sono in ritardo"}${pastTotal ? ` · ${chf(pastTotal)} dai mesi passati` : ""}</div>` : ""}`;
   v.append(sum);
   if (!people.length) { v.append(el("div", "secfoot", "Questo mese nessuno deve pagare niente.")); return; }
 
   for (const p of people) {
-    const owed = p.items.filter((i) => !i.paid), owedSum = owed.reduce((a, i) => a + i.share, 0), late = Math.max(0, ...owed.map((i) => i.late));
+    const past = arr.has(p.key) ? arr.get(p.key).items : [];
+    const owed = p.items.filter((i) => !i.paid), owedSum = owed.reduce((a, i) => a + i.share, 0) + past.reduce((a, i) => a + i.share, 0), late = Math.max(0, ...owed.map((i) => i.late), ...past.map((i) => i.late));
     const head = el("div", "sechead"); head.append(el("span", null, p.name));
-    head.append(el("span", "st " + (!owedSum ? "ok" : late ? "late" : "due"), !owedSum ? "Pagato" : late ? `in ritardo di ${late} ${late === 1 ? "giorno" : "giorni"} · ${chf(owedSum)}` : `Deve ${chf(owedSum)}`));
+    head.append(el("span", "st " + (!owedSum ? "ok" : late ? "late" : "due"), !owedSum ? "Pagato" : past.length ? `${past.length} ${past.length === 1 ? "mese arretrato" : "mesi arretrati"} · ${chf(owedSum)}` : late ? `in ritardo di ${late} ${late === 1 ? "giorno" : "giorni"} · ${chf(owedSum)}` : `Deve ${chf(owedSum)}`));
     v.append(head);
     const g = el("div", "group");
     for (const it of p.items) {
@@ -734,15 +760,36 @@ function renderMonth(v) {
       row.append(ck, t.firstChild, gr, el("span", "amt" + (it.paid ? " paid" : ""), chf(it.share)));
       g.append(row);
     }
-    if (owed.length) {
-      const text = messageFor(p, owed, y, m), phone = S.contacts[p.key] || "";
+    if (past.length) {
+      g.append(el("div", "pasthead", past.length === 1 ? "Da un mese passato" : `Dai mesi passati (${past.length})`));
+      const open = expandedPast.has(p.key), shown = open || past.length <= 4 ? past : past.slice(-3);
+      for (const it of shown) {
+        const row = el("div", "row");
+        const ck = el("button", "ck", "");
+        ck.setAttribute("role", "checkbox"); ck.setAttribute("aria-checked", "false"); ck.setAttribute("aria-label", `${it.sub.name} di ${MONTHS[it.m]} pagato`);
+        ck.addEventListener("click", () => { setPaid(it.y, it.m, it.sub, p.key, it.share, true); if (A && A.vibrate) A.vibrate(); save(); render(); toast(`${p.name}: ${it.sub.name} di ${MONTHS[it.m]} pagato`); });
+        const gr = el("div", "grow");
+        gr.append(el("div", null, `${it.sub.name} · ${MONTHS[it.m]}${it.y !== y ? " " + it.y : ""}`));
+        gr.append(el("div", "sub late", `Scaduto il ${fmtShort(it.due)} · in ritardo di ${it.late} ${it.late === 1 ? "giorno" : "giorni"}`));
+        const t = el("span"); t.innerHTML = tile(it.sub.cat);
+        row.append(ck, t.firstChild, gr, el("span", "amt", chf(it.share)));
+        g.append(row);
+      }
+      if (shown.length < past.length) {
+        const more = el("div", "row tap"); more.append(el("span", "grow link", `Mostra gli altri ${past.length - shown.length} mesi`));
+        more.addEventListener("click", () => { expandedPast.add(p.key); render(); }); g.append(more);
+      }
+    }
+    if (owed.length || past.length) {
+      const text = messageFor(p, owed, y, m, past), phone = S.contacts[p.key] || "";
       const acts = el("div", "acts");
       const wa = el("button", "act", "WhatsApp"); wa.addEventListener("click", () => openUrl(`https://wa.me/${intlDigits(phone)}?text=${encodeURIComponent(text)}`));
       const sms = el("button", "act", "SMS"); sms.addEventListener("click", () => openUrl(`sms:${phone ? "+" + intlDigits(phone) : ""}${IS_IOS ? "&" : "?"}body=${encodeURIComponent(text)}`));
       const cp = el("button", "act", "Copia"); cp.addEventListener("click", () => copyText(text));
       acts.append(wa, sms, cp); g.append(acts);
       const allRow = el("div", "row tap"); allRow.append(el("span", "grow link", "Segna tutto pagato"));
-      allRow.addEventListener("click", () => { owed.forEach((i) => setPaid(y, m, i.sub, p.key, i.share, true)); save(); render(); });
+      if (past.length) allRow.firstChild.textContent = `Segna tutto pagato (${chf(owedSum)})`;
+      allRow.addEventListener("click", () => { owed.forEach((i) => setPaid(y, m, i.sub, p.key, i.share, true)); past.forEach((i) => setPaid(i.y, i.m, i.sub, p.key, i.share, true)); save(); render(); toast(`${p.name} ha pagato tutto`); });
       g.append(allRow);
     }
     const pr = el("div", "row");
@@ -1328,7 +1375,7 @@ function renderSettings(v) {
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.5 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.6 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
