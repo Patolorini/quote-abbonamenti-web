@@ -227,7 +227,11 @@ button.d { cursor: pointer }
 /* Proporzioni su tutti i dispositivi */
 :root { --col: 600px; --sl: max(16px, env(safe-area-inset-left, 0px), calc((100vw - var(--col)) / 2)); --sr: max(16px, env(safe-area-inset-right, 0px), calc((100vw - var(--col)) / 2)) }
 input, select, textarea { font-size: 16px !important } /* sotto 16px Safari ingrandisce la pagina quando tocchi un campo */
-.tabbar { padding-left: calc(var(--sl) - 12px); padding-right: calc(var(--sr) - 12px) }
+.tabbar { padding: 6px calc(var(--sr) - 12px) max(6px, env(safe-area-inset-bottom, 0px)) calc(var(--sl) - 12px) }
+/* iPhone dalla Home: niente striscia di colore diverso sotto la barra delle schede */
+html { background: linear-gradient(var(--bg) 50%, var(--cell) 50%) fixed }
+body { background: transparent }
+#app { bottom: auto; height: 100%; height: 100dvh; background: var(--bg) }
 .sheet .bar2 { padding-left: max(10px, calc(var(--sl) - 6px)); padding-right: max(10px, calc(var(--sr) - 6px)) }
 @media (min-width: 390px) { html, body { font-size: 16px } }
 @media (max-width: 359px) { html, body { font-size: 14px } }
