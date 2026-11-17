@@ -807,6 +807,9 @@ function editSub(sub) {
   // nuovo abbonamento mentre guardi un mese passato: parte dal 1° di quel mese
   let startDate = isNew && monthsAgo(new Date(view.y, view.m, 1)) > 0 ? new Date(view.y, view.m, 1) : origDate, pastPaid = true;
   const isoDay = (dt) => `${dt.getFullYear()}-${two(dt.getMonth() + 1)}-${two(dt.getDate())}`;
+  // promemoria solo per questo abbonamento (creato o modificato da qui)
+  const ownRem = sub ? S.reminders.find((r) => !r.all && r.subs.length === 1 && r.subs[0] === sub.id) : null;
+  const rem = ownRem ? { day: ownRem.day, h: ownRem.h, m: ownRem.m, on: true } : { day: startDate.getDate() > 28 ? 1 : startDate.getDate(), h: 9, m: 0, on: false };
   if (sub && Object.keys(S.payments[k] || {}).some((x) => x.startsWith(sub.id + "|"))) eff = 1;
   const cleanMembers = () => d.members.map((x) => ({ name: x.name.trim(), share: round2(x.share) })).filter((x) => x.name && x.share > 0);
   const termsChanged = () => { if (isNew) return false; const a = JSON.stringify({ t: round2(cur.total), m: cur.members.map((x) => [personKey(x.name), round2(x.share)]) }); const b = JSON.stringify({ t: round2(d.total), m: cleanMembers().map((x) => [personKey(x.name), x.share]) }); return a !== b; };
@@ -883,6 +886,24 @@ function editSub(sub) {
       const mineEl = el("div", "secfoot"); mineEl.id = "mineNote"; body.append(mineEl);
       // da quando vale il cambio
       const effBox = el("div"); effBox.id = "effBox"; body.append(effBox);
+      // promemoria
+      body.append(el("div", "sechead", "Promemoria"));
+      const gp = el("div", "group");
+      const shared = S.reminders.filter((r) => r.on && (r.all || (sub && r.subs.includes(sub.id))) && r !== ownRem);
+      shared.forEach((r) => { const rr = el("div", "row"); const gg = el("div", "grow"); gg.append(el("div", null, r.label || whenText(r)), el("div", "sub", r.all ? "Promemoria per tutti gli abbonamenti" : "Promemoria condiviso con altri abbonamenti")); rr.append(gg); gp.append(rr); });
+      const rp0 = el("div", "row"); const lp0 = el("label", "grow", shared.length ? "Aggiungi un promemoria solo per questo" : "Promemoria ogni mese"); lp0.htmlFor = "swOwnRem";
+      const sp0 = el("input", "switch"); sp0.type = "checkbox"; sp0.id = "swOwnRem"; sp0.checked = rem.on;
+      sp0.addEventListener("change", () => { rem.on = sp0.checked; draw(); }); rp0.append(lp0, sp0); gp.append(rp0);
+      if (rem.on) {
+        const rdy = el("div", "row"); const ldy = el("label", "grow", "Giorno del mese"); ldy.htmlFor = "remDay";
+        const sdy = el("select", "in"); sdy.id = "remDay"; for (let i = 1; i <= 31; i++) sdy.append(new Option(i > 28 ? `Il ${i} (o l'ultimo giorno)` : `Il ${i}`, i)); sdy.value = rem.day;
+        sdy.addEventListener("change", () => { rem.day = +sdy.value; draw(); }); rdy.append(ldy, sdy); gp.append(rdy);
+        const rhm = el("div", "row"); const lhm = el("label", "grow", "Ora"); lhm.htmlFor = "remTime";
+        const ihm = el("input", "in link"); ihm.type = "time"; ihm.id = "remTime"; ihm.value = `${two(rem.h)}:${two(rem.m)}`;
+        ihm.addEventListener("change", () => { if (!ihm.value) return; const [hh, mi] = ihm.value.split(":").map(Number); rem.h = hh; rem.m = mi; }); rhm.append(lhm, ihm); gp.append(rhm);
+      }
+      body.append(gp);
+      body.append(el("div", "secfoot", rem.on ? `Ogni mese il ${rem.day}${rem.day > 28 ? " (nei mesi più corti l'ultimo giorno)" : ""}: è la scadenza per pagare. ` + (shared.length ? "Con più promemoria vale il primo del mese. " : "") + "Lo trovi e lo modifichi anche in Promemoria." : shared.length ? "La scadenza per pagare è il giorno del promemoria." : "Senza promemoria la scadenza è il 1° del mese."));
       // rinnovo e disdetta
       body.append(el("div", "sechead", "Rinnovo e disdetta"));
       const gr = el("div", "group");
@@ -965,6 +986,11 @@ function editSub(sub) {
       out.history.push({ from, total: out.total, members });
     } else if (!isNew) out.history = sub.history || [];
     if (isNew) S.subs.push(out); else S.subs[S.subs.findIndex((x) => x.id === sub.id)] = out;
+    if (rem.on) {
+      if (ownRem) Object.assign(ownRem, { day: rem.day, h: rem.h, m: rem.m, on: true, label: !ownRem.label || ownRem.label === sub.name ? out.name : ownRem.label });
+      else S.reminders.push({ id: uid(), day: rem.day, h: rem.h, m: rem.m, we: "no", rep: "mese", onceY: now().getFullYear(), onceM: now().getMonth(), endMode: "mai", endCount: 12, endDate: null, start: (startDate < startOfDay(now()) ? startDate : new Date()).toISOString(), label: out.name, all: false, subs: [out.id], on: true });
+      if (A && A.requestNotifications && A.notificationsAllowed && !A.notificationsAllowed()) A.requestNotifications();
+    } else if (ownRem) S.reminders = S.reminders.filter((r) => r !== ownRem);
     if (pastPaid && markFrom > markTo) {
       for (let a = markFrom; a > markTo; a--) {
         const dd = new Date(now().getFullYear(), now().getMonth() - a, 1), key = keyOf(dd);
@@ -1304,7 +1330,7 @@ function renderSettings(v) {
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.3 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.4 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
