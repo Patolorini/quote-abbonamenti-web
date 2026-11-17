@@ -1406,7 +1406,7 @@ function renderSettings(v) {
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.8 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 1.9 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
@@ -1591,12 +1591,23 @@ function showPinOnLock() {
     pinFails = 0; openLock(); return true;
   }, lockMode() === "bio" && !A ? { label: BIO_NAME === "Face ID" ? "Face ID" : "Dito", onClick: tryUnlock } : null);
 }
+/** Senza blocco: all'apertura mostra comunque la schermata d'entrata, poi entra da sola (o toccando). */
+let introTimer = null;
+function showIntro() {
+  const L = $("lock"); $("lockGreet").textContent = greeting(); $("lockErr").hidden = true;
+  $("lockPin").hidden = true; $("usePinBtn").hidden = true; $("unlockBtn").hidden = false; $("unlockBtn").textContent = "Entra";
+  L.classList.remove("opening", "success", "pinmode"); L.hidden = false; void L.offsetWidth; L.classList.add("intro");
+  const go = () => { clearTimeout(introTimer); L.removeEventListener("click", go); if (!L.hidden && !L.classList.contains("success")) openLock(); };
+  L.addEventListener("click", go);
+  introTimer = setTimeout(go, 2600);
+}
 function openLock() {
   const L = $("lock"); if (A && A.vibrate) A.vibrate(); $("lockErr").hidden = true;
   L.classList.add("success"); setTimeout(() => { L.classList.add("opening"); setTimeout(() => { L.hidden = true; L.classList.remove("intro", "opening", "success", "pinmode"); }, 560); }, 400);
 }
 function tryUnlock() {
   if ($("lock").hidden) return;
+  if (!lockActive()) { openLock(); return; } // solo intro
   authenticate((ok) => {
     if (!ok) { $("lockErr").textContent = A ? "Sblocco annullato. Tocca “Sblocca” per riprovare." : `${BIO_NAME} non riuscito. Riprova o usa il codice.`; $("lockErr").hidden = false; return; }
     openLock();
@@ -1638,7 +1649,7 @@ if (!A) {
   if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
 }
 render();
-if (lockActive()) showLock();
+if (lockActive()) showLock(); else showIntro();
 applyPending();
 scheduleNotifications();
 </script>
