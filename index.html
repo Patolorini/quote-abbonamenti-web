@@ -513,8 +513,8 @@ function coinLogo(o) {
     <path d="M${R(ax)} ${R(ay)}A318 318 0 1 1 ${R(bx)} ${R(by)}" fill="none" stroke="url(#${id}t)" stroke-width="24" stroke-linecap="round"/>${notches}
     <g class="pop"><path d="${slice(278, 0, 60)}" fill="#000" opacity=".22" transform="translate(30 -24)" filter="url(#${id}s)"/></g>
     <g stroke="#fff" stroke-width="12" stroke-linejoin="round"><path d="${slice(278, -60, 0)}" fill="#F6C343"/><path d="${slice(278, 60, 180)}" fill="#E9A92C"/><path d="${slice(278, 180, 300)}" fill="#D99A1E"/><g class="pop"><path d="${slice(278, 0, 60)}" fill="url(#${id}t)" transform="translate(24 -42)"/></g></g>
-    <g class="hands" filter="url(#${id}h)"><g class="hh">${taper(220, 150, 30, 14, 40, t1)}</g><g class="mh">${taper(30, 240, 24, 9, 50, "#fff")}</g></g>
-    <circle cx="512" cy="532" r="40" fill="#fff" stroke="${t1}" stroke-width="12"/><circle cx="512" cy="532" r="13" fill="#F6C343"/></svg>`;
+    <g class="hands" filter="url(#${id}h)"><g class="hh"><g transform="rotate(262 512 532)"><path d="M512 560V390" stroke="${t1}" stroke-width="22" stroke-linecap="round"/></g></g><g class="mh"><g transform="rotate(30 512 532)"><path d="M512 590V292" stroke="#fff" stroke-width="14" stroke-linecap="round"/><circle cx="512" cy="600" r="20" fill="#fff"/></g></g></g>
+    <circle cx="512" cy="532" r="22" fill="${t1}" stroke="#fff" stroke-width="8"/></svg>`;
 }
 function appIcon() {
   const id = "ag" + (++appGid), th = (typeof S !== "undefined" && S.settings.theme) || "predefinito";
@@ -1679,7 +1679,7 @@ function renderSettings(v) {
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 2.8 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 2.9 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
