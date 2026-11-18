@@ -229,7 +229,7 @@ html.has-deco .tabbar { background: color-mix(in srgb, var(--cell) 90%, transpar
 .lock { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; text-align: center; color: #fff; overflow: hidden;
   background: var(--lockbg, linear-gradient(180deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 62%, #000) 58%, #070b0a 100%)) }
 .lock .tiles { position: absolute; inset: 0; pointer-events: none; overflow: hidden }
-.lock .tiles .tile { position: absolute; bottom: -70px; opacity: .2; animation: floatUp linear infinite }
+.lock .tiles .tile { position: absolute; bottom: -70px; opacity: .38; animation: floatUp linear infinite }
 @keyframes floatUp { from { transform: translateY(0) rotate(-12deg) } to { transform: translateY(-1100px) rotate(12deg) } }
 .lock .body { position: relative; flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; padding: 18vh 28px 36px }
 .lock .ai-wrap { position: relative; width: 100px; height: 100px }
@@ -238,7 +238,7 @@ html.has-deco .tabbar { background: color-mix(in srgb, var(--cell) 90%, transpar
 .lock .ai svg { width: 100%; height: 100%; display: block }
 .lock h2 { font-size: 1.6rem; font-weight: 800; margin: 22px 0 4px }
 .lock .gr { opacity: .85 }
-.lock .unlock { margin-top: auto; width: 100%; border: 0; border-radius: 16px; background: #fff; color: var(--accent); font-weight: 800; font-size: 1rem; padding: 15px; cursor: pointer }
+.lock .unlock { margin-top: auto; width: 100%; border: 0; border-radius: 16px; background: #fff; color: var(--lockbtn, var(--accent)); font-weight: 800; font-size: 1rem; padding: 15px; cursor: pointer }
 .lock .note { font-size: .78rem; opacity: .75; margin-top: 12px }
 .lock .err { font-size: .8rem; font-weight: 700; background: rgb(215 55 47 / .8); padding: 5px 12px; border-radius: 999px; margin-bottom: 12px }
 .ai .chk { stroke-dasharray: 420; stroke-dashoffset: 0 }
@@ -471,7 +471,23 @@ const catSvg = (cat, skinId) => {
 const catBg = (cat) => { const sk = iconSkin(); const [a, b] = sk ? sk.grad[cat] || sk.grad.altro : CAT_GRAD[cat] || CAT_GRAD.altro; return mix(a, b, .5); };
 const tile = (cat, size) => { const k = CATS[cat] ? cat : "altro"; return `<span class="tile art" style="background:transparent${size ? `;width:${size}px;height:${size}px;border-radius:${Math.round(size * .27)}px` : ""}">${catSvg(k)}</span>`; };
 const guessCat = (name) => { const n = name.toLowerCase(); for (const [k, c] of Object.entries(CATS)) if (c.keys.some((x) => n.includes(x))) return k; return "altro"; };
-const APPICON = '<svg viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#17A693"/><stop offset="1" stop-color="#0A5F54"/></linearGradient></defs><rect width="1024" height="1024" fill="url(#g1)"/><rect x="212" y="272" width="560" height="500" rx="92" fill="#fff"/><path d="M212 364a92 92 0 0 1 92-92h376a92 92 0 0 1 92 92v38H212z" fill="#CDEDE7"/><rect x="338" y="214" width="48" height="122" rx="24" fill="#fff" stroke="#0A5F54" stroke-width="14"/><rect x="598" y="214" width="48" height="122" rx="24" fill="#fff" stroke="#0A5F54" stroke-width="14"/><path class="chk" d="M352 570l88 88 170-180" fill="none" stroke="#0F8A7A" stroke-width="66" stroke-linecap="round" stroke-linejoin="round"/><g class="coin"><circle cx="738" cy="724" r="138" fill="#F6C343" stroke="#fff" stroke-width="30"/><circle cx="738" cy="724" r="88" fill="none" stroke="#D99A1E" stroke-width="18"/><path d="M712 676h64M712 676v100M712 724h52" fill="none" stroke="#9A6510" stroke-width="22" stroke-linecap="round"/></g></svg>';
+// Icona dell'app nei colori del tema (schermata d'entrata e anteprima delle notifiche)
+let appGid = 0;
+const APP_SKINS = {
+  mare: { g: ["#4FC9E0", "#0E5F86"], head: "#CDEFF7", chk: "#0E7C9E", deco: '<path d="M0 820q128-70 256 0t256 0 256 0 256 0V1024H0z" fill="#fff" opacity=".18"/><path d="M0 900q128-60 256 0t256 0 256 0 256 0V1024H0z" fill="#fff" opacity=".16"/><circle cx="860" cy="170" r="34" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="12"/><circle cx="800" cy="250" r="18" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="10"/>' },
+  sakura: { g: ["#FF9DBE", "#C93D73"], head: "#FDE0EA", chk: "#C93D73", deco: '<g fill="#fff" opacity=".55" transform="translate(150 150) scale(9)">' + [0, 72, 144, 216, 288].map((a) => `<path transform="rotate(${a})" d="M0-1.2C-2.8-3-3.8-6.8-1.5-9.4c.6.9 1 .9 1.5 0 .5.9.9.9 1.5 0C3.8-6.8 2.8-3 0-1.2z"/>`).join("") + '</g><path d="M880 860c-40 40-36 90 8 112 12-46 6-82-8-112z" fill="#fff" opacity=".45"/>' },
+  stelle: { g: ["#2A3A80", "#070B1F"], head: "#DCE2FF", chk: "#2A3A80", deco: '<path transform="translate(150 160) scale(13)" d="M0-5Q.6-.6 5 0Q.6.6 0 5Q-.6.6-5 0Q-.6-.6 0-5z" fill="#fff"/><path transform="translate(880 300) scale(8)" d="M0-5Q.6-.6 5 0Q.6.6 0 5Q-.6.6-5 0Q-.6-.6 0-5z" fill="#FFE29A"/><circle cx="860" cy="120" r="12" fill="#fff"/><circle cx="120" cy="880" r="10" fill="#fff" opacity=".8"/><circle cx="300" cy="110" r="8" fill="#fff" opacity=".7"/>' },
+  aurora: { g: ["#0F6B5A", "#2A1D5E"], head: "#D4FBEA", chk: "#0F8A6E", deco: '<defs><linearGradient id="apau" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3AF0A6"/><stop offset=".55" stop-color="#2E7BF0"/><stop offset="1" stop-color="#B05BF0"/></linearGradient></defs><path d="M-40 300C200 40 440 260 660 80s300 0 400-40v160C880 300 700 180 520 300S120 360-40 460z" fill="url(#apau)" opacity=".55"/>' },
+  autunno: { g: ["#E9873F", "#8C3512"], head: "#FBE3C8", chk: "#B8501A", deco: '<path transform="translate(150 170) rotate(35) scale(9)" d="M0-6c3 2 4.4 5.6 0 11.4C-4.4-.6-3-4 0-6z" fill="#FFE2B8" opacity=".6"/><path transform="translate(880 880) rotate(-30) scale(11)" d="M0-6c3 2 4.4 5.6 0 11.4C-4.4-.6-3-4 0-6z" fill="#FFE2B8" opacity=".5"/>' },
+  neve: { g: ["#8FB4EE", "#2F5FAF"], head: "#E3EEFC", chk: "#2F6FCC", deco: '<path d="M0 0h1024v150c-60-40-90-30-130 10-50-50-110-50-160 0-50-50-120-50-170 0-50-50-120-50-170 0-50-50-110-50-160 0-40-40-80-50-130-10-40-40-70-30-104 10z" fill="#fff"/><circle cx="140" cy="340" r="18" fill="#fff" opacity=".8"/><circle cx="890" cy="380" r="15" fill="#fff" opacity=".8"/><circle cx="860" cy="900" r="18" fill="#fff" opacity=".7"/>' },
+};
+function appIcon() {
+  const id = "ag" + (++appGid), th = (typeof S !== "undefined" && S.settings.theme) || "predefinito";
+  let k = APP_SKINS[th];
+  if (!k) { const a = (typeof S !== "undefined" && S.settings.accent) || "#0F8A7A"; k = { g: [mix(a, "#FFFFFF", .82), mix(a, "#000000", .62)], head: mix(a, "#FFFFFF", .22), chk: a, deco: "" }; }
+  const dark = k.g[1];
+  return `<svg viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${k.g[0]}"/><stop offset="1" stop-color="${k.g[1]}"/></linearGradient></defs><rect width="1024" height="1024" fill="url(#${id})"/>${k.deco.split("apau").join(id + "au")}<rect x="212" y="272" width="560" height="500" rx="92" fill="#fff"/><path d="M212 364a92 92 0 0 1 92-92h376a92 92 0 0 1 92 92v38H212z" fill="${k.head}"/><rect x="338" y="214" width="48" height="122" rx="24" fill="#fff" stroke="${dark}" stroke-width="14"/><rect x="598" y="214" width="48" height="122" rx="24" fill="#fff" stroke="${dark}" stroke-width="14"/><path class="chk" d="M352 570l88 88 170-180" fill="none" stroke="${k.chk}" stroke-width="66" stroke-linecap="round" stroke-linejoin="round"/><g class="coin"><circle cx="738" cy="724" r="138" fill="#F6C343" stroke="#fff" stroke-width="30"/><circle cx="738" cy="724" r="88" fill="none" stroke="#D99A1E" stroke-width="18"/><path d="M712 676h64M712 676v100M712 724h52" fill="none" stroke="#9A6510" stroke-width="22" stroke-linecap="round"/></g></svg>`;
+}
 
 // ---------- temi ----------
 // Tema "Predefinito": colori a scelta. Gli altri temi hanno colori e decorazioni propri.
@@ -537,7 +553,7 @@ function themeColors(dark) {
   const bg = back === "neutro" ? (dark ? "#000000" : "#F2F2F7") : back === "caldo" ? (dark ? "#14110D" : "#F7F1E8") : dark ? mix(base, "#0A0A0B", .1) : mix(base, "#F6F7F7", .09);
   return { accent, bg, cell: dark ? (back === "tinta" ? mix(base, "#1C1C1E", .06) : "#1C1C1E") : "#FFFFFF", t };
 }
-let decoKey = "";
+let decoKey = "", lockKey = "";
 function applyTheme() {
   const st = S.settings, t0 = THEMES[st.theme] || THEMES.predefinito;
   const sysDark = A && A.isNightMode ? A.isNightMode() : mq.matches;
@@ -550,6 +566,7 @@ function applyTheme() {
   const root = document.documentElement;
   for (const k in v) root.style.setProperty(k, v[k]);
   if (t.lockbg) root.style.setProperty("--lockbg", t.lockbg); else root.style.removeProperty("--lockbg");
+  root.style.setProperty("--lockbtn", lum(accent) > .55 ? mix(accent, "#000000", .42) : accent);
   if (t.decobg) root.style.setProperty("--decobg", t.decobg[dark ? 1 : 0]); else root.style.removeProperty("--decobg");
   root.style.colorScheme = dark ? "dark" : "light";
   root.classList.toggle("has-deco", !!t.deco);
@@ -557,6 +574,9 @@ function applyTheme() {
   if (key !== decoKey) { decoKey = key; const d = document.getElementById("deco"); if (d) d.innerHTML = t.deco ? buildDeco(t.deco, dark, accent) : ""; }
   if (A && A.setBars) try { A.setBars(bg, cell, !dark); } catch (e) {}
   const tc = document.getElementById("themeColor"); if (tc) tc.setAttribute("content", bg);
+  // icone della schermata d'entrata nel tema (solo quando il tema cambia davvero)
+  const lk = [st.theme, st.accent, dark].join("|");
+  if (lk !== lockKey && typeof buildLockTiles === "function" && document.getElementById("lockTiles")) { lockKey = lk; buildLockTiles(); }
 }
 /** Disegna lo sfondo animato del tema. */
 function buildDeco(kind, dark, accent) {
@@ -1502,7 +1522,7 @@ function editReminder(rem) {
       body.append(el("div", "sechead", "Come arriverà la notifica"));
       if (chosenSubs.length) {
         const nx = nextWithMonth(spec(), 1)[0], t = nx ? notificationText(chosenSubs, nx.y, nx.m) : notificationText(chosenSubs, now().getFullYear(), now().getMonth());
-        const nb = el("div", "notif"); nb.innerHTML = `<div class="ap">${APPICON}</div><div class="grow"><div class="t"><span>Quote Abbonamenti</span><span>${nx ? fmtShort(nx.date) + ", " + two(d.h) + ":" + two(d.m) : ""}</span></div><b>${esc(d.label || (t ? t.title : "Nessuna quota"))}</b><p>${esc(t ? t.body : "In questo mese non c'è niente da chiedere.")}</p></div>`;
+        const nb = el("div", "notif"); nb.innerHTML = `<div class="ap">${appIcon()}</div><div class="grow"><div class="t"><span>Quote Abbonamenti</span><span>${nx ? fmtShort(nx.date) + ", " + two(d.h) + ":" + two(d.m) : ""}</span></div><b>${esc(d.label || (t ? t.title : "Nessuna quota"))}</b><p>${esc(t ? t.body : "In questo mese non c'è niente da chiedere.")}</p></div>`;
         body.append(nb, el("div", "secfoot", A ? "Tenendo premuta la notifica trovi “… ha pagato”, “Hanno pagato tutti” e “Ricordamelo domani”." : "Così arriverebbe nell'app per Android o iPhone; nella versione web non arrivano notifiche."));
       } else body.append(el("div", "secfoot", "Scegli almeno un abbonamento per vedere la notifica."));
       if (!isNew) {
@@ -1536,7 +1556,7 @@ function renderSettings(v) {
     const sw = id === "predefinito" ? `<span class="sw">${THEME_ICON.predefinito(st.accent || ACCENTS[0][0])}</span>`
       : `<span class="sw">${THEME_ICON[id]}</span>`;
     b.innerHTML = `${sw}<span>${t.name}</span>`;
-    b.addEventListener("click", () => { st.theme = id; save(); applyTheme(); buildLockTiles(); render(); }); th.append(b);
+    b.addEventListener("click", () => { st.theme = id; save(); applyTheme(); render(); }); th.append(b);
   }
   const prev = el("div", "iconprev"); prev.setAttribute("aria-label", "Icone degli abbonamenti con questo tema");
   for (const c of Object.keys(CATS)) { const w = el("span"); w.innerHTML = tile(c); prev.append(w.firstChild); }
@@ -1623,7 +1643,7 @@ function renderSettings(v) {
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 2.5 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 2.6 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
@@ -1832,14 +1852,14 @@ function tryUnlock() {
 }
 $("unlockBtn").addEventListener("click", tryUnlock);
 $("usePinBtn").addEventListener("click", showPinOnLock);
-$("lockIcon").innerHTML = APPICON;
 function buildLockTiles() {
+  $("lockIcon").innerHTML = appIcon();
   $("lockTiles").textContent = "";
   [["musica", 12, .05, 26, 34], ["video", 80, .35, 31, 40], ["cloud", 32, .62, 28, 30], ["giochi", 88, .85, 35, 32], ["fitness", 58, .18, 30, 28], ["notizie", 4, .5, 37, 30], ["software", 68, .72, 27, 34]].forEach(([c, x, ph, secs, size]) => {
     const w = el("span"); w.innerHTML = tile(c, size); const t = w.firstChild; t.style.left = x + "%"; t.style.animationDuration = secs + "s"; t.style.animationDelay = (-ph * secs) + "s"; $("lockTiles").append(t);
   });
 }
-buildLockTiles();
+lockKey = [S.settings.theme, S.settings.accent, document.documentElement.style.colorScheme === "dark"].join("|"); buildLockTiles();
 const lockActive = () => { const m = lockMode(); return m === "pin" || (m === "bio" && (A ? bioAvailable() : !!S.settings.webauthnId)); };
 // web: richiede lo sblocco quando torni nell'app dopo il tempo scelto
 let hiddenAt = 0;
