@@ -1,0 +1,13 @@
+{
+  "images": [
+    {
+      "filename": "cat-mare-altro.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

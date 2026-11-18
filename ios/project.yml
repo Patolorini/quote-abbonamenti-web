@@ -1,0 +1,60 @@
+# Progetto Xcode generato con XcodeGen: brew install xcodegen && cd ios && xcodegen generate
+name: QuoteAbbonamenti
+options:
+  bundleIdPrefix: ch.quoteabbonamenti
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_STRICT_CONCURRENCY: minimal
+targets:
+  QuoteAbbonamenti:
+    type: application
+    platform: iOS
+    sources:
+      - QuoteAbbonamenti
+    info:
+      path: QuoteAbbonamenti/Info.plist
+      properties:
+        CFBundleDisplayName: Quote
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen:
+          UIColorName: ""
+        NSFaceIDUsageDescription: Face ID protegge i tuoi abbonamenti e i pagamenti.
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        ITSAppUsesNonExemptEncryption: false
+        LSApplicationQueriesSchemes: [whatsapp, sms]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ch.quoteabbonamenti.app
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+  QuoteAbbonamentiTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - QuoteAbbonamentiTests
+    dependencies:
+      - target: QuoteAbbonamenti
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: ch.quoteabbonamenti.app.tests
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/QuoteAbbonamenti.app/QuoteAbbonamenti
+        BUNDLE_LOADER: $(TEST_HOST)
+schemes:
+  QuoteAbbonamenti:
+    build:
+      targets:
+        QuoteAbbonamenti: all
+    test:
+      targets:
+        - QuoteAbbonamentiTests
