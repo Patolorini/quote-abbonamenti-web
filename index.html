@@ -89,7 +89,7 @@ select.in { appearance: none; -webkit-appearance: none; text-align-last: right; 
 .cat { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: .72rem; cursor: pointer; padding: 6px 2px; border-radius: 12px }
 .cat .tile { width: 42px; height: 42px; border-radius: 11px }
 .cat .tile svg { width: 24px; height: 24px }
-.tile.art { overflow: hidden }
+.tile.art { overflow: hidden; isolation: isolate; -webkit-mask-image: -webkit-radial-gradient(white, black) }
 .tile.art svg, .cat .tile.art svg { width: 100%; height: 100%; display: block }
 .cat.sel { box-shadow: 0 0 0 2px var(--accent); font-weight: 700 }
 
@@ -434,17 +434,17 @@ let catGid = 0;
 const BLOSSOM_SM = (x, y, sc, c, o) => `<g transform="translate(${x} ${y}) scale(${sc})" fill="${c}" opacity="${o}">${[0, 72, 144, 216, 288].map((a) => `<path transform="rotate(${a})" d="M0-1.2C-2.8-3-3.8-6.8-1.5-9.4c.6.9 1 .9 1.5 0 .5.9.9.9 1.5 0C3.8-6.8 2.8-3 0-1.2z"/>`).join("")}</g>`;
 const SPARK_SM = (x, y, sc, c, o = 1) => `<path transform="translate(${x} ${y}) scale(${sc})" d="M0-5Q.6-.6 5 0Q.6.6 0 5Q-.6.6-5 0Q-.6-.6 0-5z" fill="${c}" opacity="${o}"/>`;
 const ICON_SKINS = {
-  mare: { grad: { musica: ["#4FC9E0", "#167FA6"], video: ["#4B9FE0", "#1D5CA6"], cloud: ["#86DDF2", "#2A93C4"], giochi: ["#6A95F0", "#2B4FB0"], notizie: ["#F0D49A", "#C08B3E"], fitness: ["#55D3B8", "#138777"], software: ["#7699B6", "#3C5A78"], internet: ["#3FD0D8", "#0B7F94"], altro: ["#A3BECD", "#5F7F92"] },
+  mare: { pal: ["#FF9F7A", "#FFE08A", "#3FC1E0"], grad: { musica: ["#4FC9E0", "#167FA6"], video: ["#4B9FE0", "#1D5CA6"], cloud: ["#86DDF2", "#2A93C4"], giochi: ["#6A95F0", "#2B4FB0"], notizie: ["#F0D49A", "#C08B3E"], fitness: ["#55D3B8", "#138777"], software: ["#7699B6", "#3C5A78"], internet: ["#3FD0D8", "#0B7F94"], altro: ["#A3BECD", "#5F7F92"] },
     deco: () => `<path d="M0 37q5.5-3.4 11 0t11 0 11 0 11 0V44H0z" fill="#fff" opacity=".24"/><path d="M0 40.5q5.5-3 11 0t11 0 11 0 11 0V44H0z" fill="#fff" opacity=".2"/><circle cx="38" cy="8" r="2.2" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><circle cx="34.5" cy="13" r="1.2" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1"/>` },
-  sakura: { grad: { musica: ["#FF9DBE", "#DB4F86"], video: ["#FF9C9C", "#D4566C"], cloud: ["#C3AEFA", "#8468DA"], giochi: ["#DCA0F8", "#A05ED6"], notizie: ["#FFC29A", "#DC8456"], fitness: ["#A9DDAE", "#5FA870"], software: ["#DBA9C6", "#A0658A"], internet: ["#A6D4EC", "#5C9CC8"], altro: ["#DDBCCA", "#A47F90"] },
+  sakura: { pal: ["#FF8FB5", "#FFE38A", "#B9A2FF"], grad: { musica: ["#FF9DBE", "#DB4F86"], video: ["#FF9C9C", "#D4566C"], cloud: ["#C3AEFA", "#8468DA"], giochi: ["#DCA0F8", "#A05ED6"], notizie: ["#FFC29A", "#DC8456"], fitness: ["#A9DDAE", "#5FA870"], software: ["#DBA9C6", "#A0658A"], internet: ["#A6D4EC", "#5C9CC8"], altro: ["#DDBCCA", "#A47F90"] },
     deco: () => BLOSSOM_SM(37.5, 7, .5, "#fff", .7) + `<path d="M5 36c-1.6 1.8-1.4 4 .4 5 .5-2 .3-3.6-.4-5z" fill="#fff" opacity=".6"/>` },
-  stelle: { fg: "#FFE29A", grad: { musica: ["#2A2F7A", "#0E1240"], video: ["#33246E", "#120B38"], cloud: ["#1E3C80", "#0A1A44"], giochi: ["#3B2A82", "#150C42"], notizie: ["#2C3570", "#0E1336"], fitness: ["#1F3A6E", "#0A1834"], software: ["#283055", "#0D1128"], internet: ["#1E3F7A", "#0A1A3E"], altro: ["#2B2F52", "#0E1027"] },
+  stelle: { pal: ["#FFE29A", "#B8C4FF", "#FF9FC6"], fg: "#FFE29A", grad: { musica: ["#2A2F7A", "#0E1240"], video: ["#33246E", "#120B38"], cloud: ["#1E3C80", "#0A1A44"], giochi: ["#3B2A82", "#150C42"], notizie: ["#2C3570", "#0E1336"], fitness: ["#1F3A6E", "#0A1834"], software: ["#283055", "#0D1128"], internet: ["#1E3F7A", "#0A1A3E"], altro: ["#2B2F52", "#0E1027"] },
     deco: () => SPARK_SM(7.5, 8, .55, "#fff") + SPARK_SM(37, 36.5, .45, "#fff", .8) + `<circle cx="37" cy="9" r=".9" fill="#fff"/><circle cx="6" cy="34" r=".8" fill="#fff" opacity=".8"/>` },
-  aurora: { fg: "#EFFFF8", grad: { musica: ["#0E3B4A", "#061620"], video: ["#173052", "#08121F"], cloud: ["#0E3A52", "#05141E"], giochi: ["#241F55", "#0B0A22"], notizie: ["#123A3A", "#061818"], fitness: ["#0D4236", "#041812"], software: ["#1A2A3C", "#090F17"], internet: ["#0B4048", "#04171B"], altro: ["#1E2A33", "#0A1015"] },
+  aurora: { pal: ["#3AF0A6", "#7AAAFF", "#C38BFF"], fg: "#EFFFF8", grad: { musica: ["#0E3B4A", "#061620"], video: ["#173052", "#08121F"], cloud: ["#0E3A52", "#05141E"], giochi: ["#241F55", "#0B0A22"], notizie: ["#123A3A", "#061818"], fitness: ["#0D4236", "#041812"], software: ["#1A2A3C", "#090F17"], internet: ["#0B4048", "#04171B"], altro: ["#1E2A33", "#0A1015"] },
     deco: (id) => `<defs><linearGradient id="au${id}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3AF0A6"/><stop offset=".55" stop-color="#2E7BF0"/><stop offset="1" stop-color="#B05BF0"/></linearGradient></defs><path d="M-2 13C9 1 19 11 29 3s13 0 17-2v7C38 12 30 7 22 13S6 15-2 20z" fill="url(#au${id})" opacity=".6"/>` },
-  autunno: { fg: "#FFF6E6", grad: { musica: ["#E2733B", "#A8401A"], video: ["#D8553A", "#9A2A1A"], cloud: ["#C99A5B", "#8A5E28"], giochi: ["#B4613A", "#7A3518"], notizie: ["#E6A53A", "#B2700E"], fitness: ["#8FA34A", "#5A6E1E"], software: ["#9C7A5E", "#614532"], internet: ["#C98A3C", "#8C5A14"], altro: ["#B39A86", "#7A6452"] },
+  autunno: { pal: ["#FFD08A", "#F59E5B", "#D6DC86"], fg: "#FFF6E6", grad: { musica: ["#E2733B", "#A8401A"], video: ["#D8553A", "#9A2A1A"], cloud: ["#C99A5B", "#8A5E28"], giochi: ["#B4613A", "#7A3518"], notizie: ["#E6A53A", "#B2700E"], fitness: ["#8FA34A", "#5A6E1E"], software: ["#9C7A5E", "#614532"], internet: ["#C98A3C", "#8C5A14"], altro: ["#B39A86", "#7A6452"] },
     deco: () => `<path transform="translate(36.5 36.5) rotate(-30)" d="M0-6c3 2 4.4 5.6 0 11.4C-4.4 -.6-3-4 0-6z" fill="#FFE2B8" opacity=".5"/><path transform="translate(7 7) rotate(40)" d="M0-4c2 1.4 3 3.8 0 7.6C-3 -.4-2-2.6 0-4z" fill="#FFE2B8" opacity=".4"/>` },
-  neve: { grad: { musica: ["#8FB4EE", "#4A78C8"], video: ["#9AA6EE", "#5866C4"], cloud: ["#8CC4EE", "#3F88C4"], giochi: ["#AE9FEA", "#7460C6"], notizie: ["#A9B9D4", "#6A7FA2"], fitness: ["#86CACA", "#3F9498"], software: ["#9AA8C0", "#5A6C88"], internet: ["#84BEE4", "#3A7FB4"], altro: ["#A8B3C2", "#6E7A8C"] },
+  neve: { pal: ["#7FB6F5", "#FFFFFF", "#B9A6F2"], grad: { musica: ["#8FB4EE", "#4A78C8"], video: ["#9AA6EE", "#5866C4"], cloud: ["#8CC4EE", "#3F88C4"], giochi: ["#AE9FEA", "#7460C6"], notizie: ["#A9B9D4", "#6A7FA2"], fitness: ["#86CACA", "#3F9498"], software: ["#9AA8C0", "#5A6C88"], internet: ["#84BEE4", "#3A7FB4"], altro: ["#A8B3C2", "#6E7A8C"] },
     deco: () => `<path d="M0 0h44v5.5q-3.7 3.4-7.3.6t-7.4 1.6-7.3-.8-7.3 1.6-7.4-.8T0 6.8z" fill="#fff" opacity=".95"/><circle cx="7" cy="14" r="1.1" fill="#fff" opacity=".8"/><circle cx="38" cy="15" r="1" fill="#fff" opacity=".8"/><circle cx="35" cy="37" r="1.2" fill="#fff" opacity=".7"/>` },
 };
 // colori dei dettagli che riprendono lo sfondo dell'icona
@@ -454,10 +454,22 @@ const catSvg = (cat, skinId) => {
   const skin = skinId !== undefined ? ICON_SKINS[skinId] || null : iconSkin(), id = "cg" + (++catGid);
   const [a, b] = skin ? skin.grad[cat] || skin.grad.altro : CAT_GRAD[cat] || CAT_GRAD.altro;
   let art = CAT_ART[cat] || CAT_ART.altro;
-  if (skin) { if (CAT_DETAIL[cat]) art = art.split(CAT_DETAIL[cat]).join(b); if (skin.fg) art = art.split('"#fff"').join(`"${skin.fg}"`); }
+  if (skin) {
+    const fg = skin.fg || "#FFFFFF", pal = skin.pal, sw = (from, to) => { art = art.split(from).join(to); };
+    if (CAT_DETAIL[cat]) sw(CAT_DETAIL[cat], b);
+    // niente colori "di serie" fuori tema: tutto prende i colori del tema
+    sw('<path d="M33.5 6.5l.9 2.2 2.2.9-2.2.9-.9 2.2-.9-2.2-2.2-.9 2.2-.9z" fill="#FFE07A"/>', ""); // stellina della musica (c'è la decorazione)
+    sw('<circle cx="34" cy="10" r="3.2" fill="#FFE07A"/>', ""); // sole del wifi
+    sw("#FF8A65", pal[0]); sw("#FFD54F", pal[1]); sw("#64B5F6", pal[2]); // software
+    sw("#FF6FA0", pal[2]); sw("#4FD08A", pal[0]); // tasti dei giochi
+    sw("#D5F7E4", mix(fg, b, .72)); sw("#FFE7B8", mix(fg, b, .8)); sw("#C9A36A", mix(fg, b, .45));
+    if (skin.fg) sw('"#fff"', `"${skin.fg}"`);
+  }
   return `<svg viewBox="0 0 44 44" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="44" height="44" fill="url(#${id})"/>${skin ? skin.deco(id) : ""}${art}</svg>`;
 };
-const tile = (cat, size) => { const k = CATS[cat] ? cat : "altro", c = CATS[k]; return `<span class="tile art" style="background:${c.color}${size ? `;width:${size}px;height:${size}px;border-radius:${Math.round(size * .27)}px` : ""}">${catSvg(k)}</span>`; };
+// sfondo del riquadro uguale al colore dell'icona (niente bordini di un altro colore)
+const catBg = (cat) => { const sk = iconSkin(); const [a, b] = sk ? sk.grad[cat] || sk.grad.altro : CAT_GRAD[cat] || CAT_GRAD.altro; return mix(a, b, .5); };
+const tile = (cat, size) => { const k = CATS[cat] ? cat : "altro"; return `<span class="tile art" style="background:${catBg(k)}${size ? `;width:${size}px;height:${size}px;border-radius:${Math.round(size * .27)}px` : ""}">${catSvg(k)}</span>`; };
 const guessCat = (name) => { const n = name.toLowerCase(); for (const [k, c] of Object.entries(CATS)) if (c.keys.some((x) => n.includes(x))) return k; return "altro"; };
 const APPICON = '<svg viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#17A693"/><stop offset="1" stop-color="#0A5F54"/></linearGradient></defs><rect width="1024" height="1024" fill="url(#g1)"/><rect x="212" y="272" width="560" height="500" rx="92" fill="#fff"/><path d="M212 364a92 92 0 0 1 92-92h376a92 92 0 0 1 92 92v38H212z" fill="#CDEDE7"/><rect x="338" y="214" width="48" height="122" rx="24" fill="#fff" stroke="#0A5F54" stroke-width="14"/><rect x="598" y="214" width="48" height="122" rx="24" fill="#fff" stroke="#0A5F54" stroke-width="14"/><path class="chk" d="M352 570l88 88 170-180" fill="none" stroke="#0F8A7A" stroke-width="66" stroke-linecap="round" stroke-linejoin="round"/><g class="coin"><circle cx="738" cy="724" r="138" fill="#F6C343" stroke="#fff" stroke-width="30"/><circle cx="738" cy="724" r="88" fill="none" stroke="#D99A1E" stroke-width="18"/><path d="M712 676h64M712 676v100M712 724h52" fill="none" stroke="#9A6510" stroke-width="22" stroke-linecap="round"/></g></svg>';
 
@@ -1611,7 +1623,7 @@ function renderSettings(v) {
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 2.3 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 2.4 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
