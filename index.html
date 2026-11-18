@@ -242,10 +242,14 @@ html.has-deco .tabbar { background: color-mix(in srgb, var(--cell) 90%, transpar
 .lock .note { font-size: .78rem; opacity: .75; margin-top: 12px }
 .lock .err { font-size: .8rem; font-weight: 700; background: rgb(215 55 47 / .8); padding: 5px 12px; border-radius: 999px; margin-bottom: 12px }
 .ai .chk { stroke-dasharray: 420; stroke-dashoffset: 0 }
+.ai .qarc { stroke-dasharray: 1450; stroke-dashoffset: 0 }
 .ai .coin { transform-box: fill-box; transform-origin: center }
 .lock.intro .ai { animation: iconIn .7s cubic-bezier(.34, 1.56, .64, 1) both }
 .lock.intro .ring { animation: ring 1.6s ease-out .25s both }
 .lock.intro .ai .chk { stroke-dashoffset: 420; animation: draw .45s ease-out .35s forwards }
+.lock.intro .ai .qarc { stroke-dashoffset: 1450; animation: draw .7s cubic-bezier(.5, 0, .3, 1) .3s forwards }
+.lock.intro .ai .qhead { opacity: 0; animation: qhead .25s ease-out .92s forwards }
+@keyframes qhead { from { opacity: 0; transform: translateY(-30px) } to { opacity: 1; transform: none } }
 .lock.intro .ai .coin { opacity: 0; animation: coinIn .65s cubic-bezier(.34, 1.56, .64, 1) .6s forwards }
 .lock.intro h2 { animation: rise .5s ease-out .45s both }
 .lock.intro .gr { animation: rise .5s ease-out .55s both }
@@ -278,7 +282,7 @@ html.has-deco .tabbar { background: color-mix(in srgb, var(--cell) 90%, transpar
 @keyframes rise { from { opacity: 0; transform: translateY(18px) } }
 @keyframes openUp { to { opacity: 0; transform: scale(1.18); visibility: hidden } }
 @media (prefers-reduced-motion: reduce) {
-  .lock.intro *, .sheet { animation: none !important } .lock.intro .ai .chk { stroke-dashoffset: 0 } .lock.intro .ai .coin { opacity: 1 }
+  .lock.intro *, .sheet { animation: none !important } .lock.intro .ai .chk, .lock.intro .ai .qarc { stroke-dashoffset: 0 } .lock.intro .ai .coin, .lock.intro .ai .qhead { opacity: 1 }
   .lock .tiles { display: none } .switch, .switch::after { transition: none }
 }
 
@@ -485,8 +489,7 @@ function appIcon() {
   const id = "ag" + (++appGid), th = (typeof S !== "undefined" && S.settings.theme) || "predefinito";
   let k = APP_SKINS[th];
   if (!k) { const a = (typeof S !== "undefined" && S.settings.accent) || "#0F8A7A"; k = { g: [mix(a, "#FFFFFF", .82), mix(a, "#000000", .62)], head: mix(a, "#FFFFFF", .22), chk: a, deco: "" }; }
-  const dark = k.g[1];
-  return `<svg viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${k.g[0]}"/><stop offset="1" stop-color="${k.g[1]}"/></linearGradient></defs><rect width="1024" height="1024" fill="url(#${id})"/>${k.deco.split("apau").join(id + "au")}<rect x="212" y="272" width="560" height="500" rx="92" fill="#fff"/><path d="M212 364a92 92 0 0 1 92-92h376a92 92 0 0 1 92 92v38H212z" fill="${k.head}"/><rect x="338" y="214" width="48" height="122" rx="24" fill="#fff" stroke="${dark}" stroke-width="14"/><rect x="598" y="214" width="48" height="122" rx="24" fill="#fff" stroke="${dark}" stroke-width="14"/><path class="chk" d="M352 570l88 88 170-180" fill="none" stroke="${k.chk}" stroke-width="66" stroke-linecap="round" stroke-linejoin="round"/><g class="coin"><circle cx="738" cy="724" r="138" fill="#F6C343" stroke="#fff" stroke-width="30"/><circle cx="738" cy="724" r="88" fill="none" stroke="#D99A1E" stroke-width="18"/><path d="M712 676h64M712 676v100M712 724h52" fill="none" stroke="#9A6510" stroke-width="22" stroke-linecap="round"/></g></svg>`;
+  return `<svg viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${k.g[0]}"/><stop offset="1" stop-color="${k.g[1]}"/></linearGradient></defs><rect width="1024" height="1024" fill="url(#${id})"/>${k.deco.split("apau").join(id + "au")}<path class="qarc" d="M660 700A262 262 0 1 1 762 520" fill="none" stroke="#fff" stroke-width="112" stroke-linecap="round"/><path class="qhead" d="M676 470l170 6-82 150z" fill="#fff"/><g class="coin"><circle cx="742" cy="748" r="132" fill="#F6C343" stroke="#fff" stroke-width="29"/><circle cx="742" cy="748" r="84.5" fill="none" stroke="#D99A1E" stroke-width="17"/><path d="M717 702h61M717 702v95M717 748h50" fill="none" stroke="#9A6510" stroke-width="21" stroke-linecap="round"/></g></svg>`;
 }
 
 // ---------- temi ----------
@@ -1643,7 +1646,7 @@ function renderSettings(v) {
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 2.6 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 2.7 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
