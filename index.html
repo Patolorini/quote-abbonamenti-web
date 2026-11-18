@@ -445,7 +445,7 @@ const ICON_SKINS = {
   autunno: { pal: ["#FFD08A", "#F59E5B", "#D6DC86"], fg: "#FFF6E6", grad: { musica: ["#E2733B", "#A8401A"], video: ["#D8553A", "#9A2A1A"], cloud: ["#C99A5B", "#8A5E28"], giochi: ["#B4613A", "#7A3518"], notizie: ["#E6A53A", "#B2700E"], fitness: ["#8FA34A", "#5A6E1E"], software: ["#9C7A5E", "#614532"], internet: ["#C98A3C", "#8C5A14"], altro: ["#B39A86", "#7A6452"] },
     deco: () => `<path transform="translate(36.5 36.5) rotate(-30)" d="M0-6c3 2 4.4 5.6 0 11.4C-4.4 -.6-3-4 0-6z" fill="#FFE2B8" opacity=".5"/><path transform="translate(7 7) rotate(40)" d="M0-4c2 1.4 3 3.8 0 7.6C-3 -.4-2-2.6 0-4z" fill="#FFE2B8" opacity=".4"/>` },
   neve: { pal: ["#7FB6F5", "#FFFFFF", "#B9A6F2"], grad: { musica: ["#8FB4EE", "#4A78C8"], video: ["#9AA6EE", "#5866C4"], cloud: ["#8CC4EE", "#3F88C4"], giochi: ["#AE9FEA", "#7460C6"], notizie: ["#A9B9D4", "#6A7FA2"], fitness: ["#86CACA", "#3F9498"], software: ["#9AA8C0", "#5A6C88"], internet: ["#84BEE4", "#3A7FB4"], altro: ["#A8B3C2", "#6E7A8C"] },
-    deco: () => `<path d="M0 0h44v5.5q-3.7 3.4-7.3.6t-7.4 1.6-7.3-.8-7.3 1.6-7.4-.8T0 6.8z" fill="#fff" opacity=".95"/><circle cx="7" cy="14" r="1.1" fill="#fff" opacity=".8"/><circle cx="38" cy="15" r="1" fill="#fff" opacity=".8"/><circle cx="35" cy="37" r="1.2" fill="#fff" opacity=".7"/>` },
+    deco: () => `<path d="M0 0h44v10.5c-1.6-1.6-2.4-3.6-3.2-4.2-1.4 2.4-3.6 2.6-5.4.8-2.2 1.8-5 1.6-7-.2-2 1.8-5 1.8-7 0-2 1.8-4.8 2-7 .2-1.8 1.8-4 1.6-5.4-.8C8.2 7 7.6 8.8 6 9.6 4.6 9 3.6 8.6 0 10.5z" fill="#fff"/><circle cx="7" cy="14" r="1.1" fill="#fff" opacity=".8"/><circle cx="38" cy="15" r="1" fill="#fff" opacity=".8"/><circle cx="35" cy="37" r="1.2" fill="#fff" opacity=".7"/>` },
 };
 // colori dei dettagli che riprendono lo sfondo dell'icona
 const CAT_DETAIL = { giochi: "#6A3FE6", cloud: "#2F7BEA", software: "#45526A", altro: "#7C7C82", video: "#E0302A", notizie: "#E39B1F" };
@@ -469,7 +469,7 @@ const catSvg = (cat, skinId) => {
 };
 // sfondo del riquadro uguale al colore dell'icona (niente bordini di un altro colore)
 const catBg = (cat) => { const sk = iconSkin(); const [a, b] = sk ? sk.grad[cat] || sk.grad.altro : CAT_GRAD[cat] || CAT_GRAD.altro; return mix(a, b, .5); };
-const tile = (cat, size) => { const k = CATS[cat] ? cat : "altro"; return `<span class="tile art" style="background:${catBg(k)}${size ? `;width:${size}px;height:${size}px;border-radius:${Math.round(size * .27)}px` : ""}">${catSvg(k)}</span>`; };
+const tile = (cat, size) => { const k = CATS[cat] ? cat : "altro"; return `<span class="tile art" style="background:transparent${size ? `;width:${size}px;height:${size}px;border-radius:${Math.round(size * .27)}px` : ""}">${catSvg(k)}</span>`; };
 const guessCat = (name) => { const n = name.toLowerCase(); for (const [k, c] of Object.entries(CATS)) if (c.keys.some((x) => n.includes(x))) return k; return "altro"; };
 const APPICON = '<svg viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#17A693"/><stop offset="1" stop-color="#0A5F54"/></linearGradient></defs><rect width="1024" height="1024" fill="url(#g1)"/><rect x="212" y="272" width="560" height="500" rx="92" fill="#fff"/><path d="M212 364a92 92 0 0 1 92-92h376a92 92 0 0 1 92 92v38H212z" fill="#CDEDE7"/><rect x="338" y="214" width="48" height="122" rx="24" fill="#fff" stroke="#0A5F54" stroke-width="14"/><rect x="598" y="214" width="48" height="122" rx="24" fill="#fff" stroke="#0A5F54" stroke-width="14"/><path class="chk" d="M352 570l88 88 170-180" fill="none" stroke="#0F8A7A" stroke-width="66" stroke-linecap="round" stroke-linejoin="round"/><g class="coin"><circle cx="738" cy="724" r="138" fill="#F6C343" stroke="#fff" stroke-width="30"/><circle cx="738" cy="724" r="88" fill="none" stroke="#D99A1E" stroke-width="18"/><path d="M712 676h64M712 676v100M712 724h52" fill="none" stroke="#9A6510" stroke-width="22" stroke-linecap="round"/></g></svg>';
 
@@ -1623,7 +1623,7 @@ function renderSettings(v) {
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 2.4 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 2.5 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
