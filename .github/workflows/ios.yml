@@ -3,7 +3,7 @@ name: App iPhone
 on:
   push:
     branches: [main, claude/ios-native]
-    paths: ["ios/**", ".github/workflows/ios.yml"]
+    paths: ["ios/**", "!ios/**/*.md", ".github/workflows/ios.yml"]
   workflow_dispatch:
 
 permissions:
