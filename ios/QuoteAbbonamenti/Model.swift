@@ -107,9 +107,10 @@ struct Settings: Codable, Hashable {
     var pinSalt: String = ""
     var webauthnId: String = ""
     var lastBackup: String? = nil
+    var tutorialSeen: Bool? = nil
 
     init() {}
-    enum CodingKeys: String, CodingKey { case theme, accent, back, mode, twint, sign, fu, lock, lockDelay, lockMode, pinHash, pinSalt, webauthnId, lastBackup }
+    enum CodingKeys: String, CodingKey { case theme, accent, back, mode, twint, sign, fu, lock, lockDelay, lockMode, pinHash, pinSalt, webauthnId, lastBackup, tutorialSeen }
     init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
         theme = c.v(.theme, "predefinito"); accent = c.v(.accent, "#0F8A7A"); back = c.v(.back, "tinta")
@@ -118,6 +119,7 @@ struct Settings: Codable, Hashable {
         lockMode = try? c.decodeIfPresent(String.self, forKey: .lockMode)
         pinHash = c.v(.pinHash, ""); pinSalt = c.v(.pinSalt, ""); webauthnId = c.v(.webauthnId, "")
         lastBackup = try? c.decodeIfPresent(String.self, forKey: .lastBackup)
+        tutorialSeen = try? c.decodeIfPresent(Bool.self, forKey: .tutorialSeen)
         migrate()
     }
 

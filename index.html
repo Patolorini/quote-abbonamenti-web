@@ -226,6 +226,30 @@ html.has-deco .tabbar { background: color-mix(in srgb, var(--cell) 90%, transpar
 .toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); font-size: .88rem; padding: 9px 16px; border-radius: 999px; z-index: 40; max-width: calc(100% - 32px); text-align: center }
 
 /* schermata di accesso */
+/* tutorial */
+.tut { position: fixed; inset: 0; z-index: 26; background: var(--bg); display: flex; flex-direction: column; color: var(--fg); animation: tutIn .35s ease-out }
+.tut .tbar { display: flex; justify-content: space-between; align-items: center; padding: calc(10px + env(safe-area-inset-top, 0px)) var(--sr) 0 var(--sl) }
+.tut .tbar span { font-size: .85rem; color: var(--ink2) }
+.tut .tbar button { border: 0; background: none; color: var(--accent); font-size: 1rem; padding: 8px 4px; cursor: pointer }
+.tut .tbody { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 10px max(28px, var(--sl)) 0; overflow: hidden; touch-action: pan-y }
+.tut .art { width: 168px; height: 168px; border-radius: 50%; background: var(--accent-soft); display: grid; place-items: center; position: relative; margin-bottom: 28px; animation: artIn .45s cubic-bezier(.34, 1.56, .64, 1) }
+.tut .art .big { width: 84px; height: 84px; border-radius: 22px; overflow: hidden; box-shadow: 0 10px 24px -8px rgb(0 0 0 / .35) }
+.tut .art .big svg { width: 100%; height: 100%; display: block }
+.tut .art .ico { width: 72px; height: 72px; color: var(--accent) }
+.tut .art .ico svg { width: 100%; height: 100%; stroke-width: 1.6 }
+.tut .art .orb { position: absolute; }
+.tut .art .orb .tile { width: 38px; height: 38px; border-radius: 10px; box-shadow: 0 6px 14px -6px rgb(0 0 0 / .35) }
+.tut h2 { font-size: 1.55rem; font-weight: 800; margin: 0 0 10px; animation: rise .4s ease-out .05s both }
+.tut p { font-size: 1rem; line-height: 1.5; color: var(--ink2); margin: 0; max-width: 380px; animation: rise .4s ease-out .12s both }
+.tut p b { color: var(--fg) }
+.tut .tdots { display: flex; gap: 8px; justify-content: center; margin: 26px 0 18px }
+.tut .tdots i { width: 8px; height: 8px; border-radius: 4px; background: var(--sep); transition: width .25s, background .25s }
+.tut .tdots i.on { width: 22px; background: var(--accent) }
+.tut .tfoot { padding: 0 var(--sr) calc(18px + env(safe-area-inset-bottom, 0px)) var(--sl); display: flex; flex-direction: column; gap: 10px }
+.tut .tfoot .next { border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); font-weight: 800; font-size: 1.05rem; padding: 15px; cursor: pointer }
+.tut .tfoot .alt { border: 0; border-radius: 14px; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 1rem; padding: 13px; cursor: pointer }
+@keyframes tutIn { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: none } }
+@keyframes artIn { from { transform: scale(.6); opacity: 0 } to { transform: none; opacity: 1 } }
 .lock { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; text-align: center; color: #fff; overflow: hidden;
   background: var(--lockbg, linear-gradient(180deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 62%, #000) 58%, #070b0a 100%)) }
 .lock .tiles { position: absolute; inset: 0; pointer-events: none; overflow: hidden }
@@ -342,6 +366,7 @@ html.ios-pwa, html.ios-pwa body { height: var(--apph, 100%) }
     </div>
   </div>
 </div>
+<div class="tut" id="tut" hidden role="dialog" aria-modal="true" aria-label="Come funziona"></div>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
@@ -656,7 +681,7 @@ mq.addEventListener && mq.addEventListener("change", applyTheme);
 // ---------- dati ----------
 const KEY = "qa.data.v1";
 const DEFAULT = () => ({ v: 1, subs: [], payments: {}, reminders: [], contacts: {},
-  settings: { theme: "predefinito", accent: "#0F8A7A", back: "tinta", mode: "sistema", twint: "", sign: "", fu: 5, lock: true, lockDelay: 0, lockMode: null, pinHash: "", pinSalt: "", webauthnId: "" } });
+  settings: { theme: "predefinito", accent: "#0F8A7A", back: "tinta", mode: "sistema", twint: "", sign: "", fu: 5, lock: true, lockDelay: 0, tutorialSeen: false, lockMode: null, pinHash: "", pinSalt: "", webauthnId: "" } });
 // temi delle versioni precedenti → Predefinito con lo stesso colore
 function migrateTheme(st) {
   if (st.mode !== "chiaro" && st.mode !== "scuro") { let d = false; try { d = A && A.isNightMode ? A.isNightMode() : window.matchMedia("(prefers-color-scheme: dark)").matches; } catch (e) {} st.mode = d ? "scuro" : "chiaro"; }
@@ -668,7 +693,9 @@ function load() {
   let raw = null;
   try { raw = A && A.loadData ? A.loadData() : localStorage.getItem(KEY); } catch (e) {}
   if (!raw) { try { raw = localStorage.getItem(KEY); } catch (e) {} }
-  try { const j = JSON.parse(raw); if (j && j.v === 1) { const o = Object.assign(DEFAULT(), j, { settings: Object.assign(DEFAULT().settings, j.settings) }); migrateTheme(o.settings); return o; } } catch (e) {}
+  try { const j = JSON.parse(raw); if (j && j.v === 1) { const o = Object.assign(DEFAULT(), j, { settings: Object.assign(DEFAULT().settings, j.settings) }); migrateTheme(o.settings);
+    if (!j.settings || j.settings.tutorialSeen === undefined) o.settings.tutorialSeen = o.subs.length > 0; // chi usa già l'app non lo rivede
+    return o; } } catch (e) {}
   { const o = DEFAULT(); migrateTheme(o.settings); return o; }
 }
 let saveTimer = null;
@@ -1673,13 +1700,16 @@ function renderSettings(v) {
   addRow("Esporta pagamenti per Excel (CSV)", () => saveFile(`QuoteAbbonamenti-pagamenti-${day}.csv`, "text/csv", paymentsCSV()));
   v.append(g7, el("div", "secfoot", (A ? "I dati restano solo su questo telefono: esporta ogni tanto un backup (per esempio su Google Drive) per non perderli se cambi telefono." : "I dati restano solo su questo dispositivo, dentro l'app: esporta ogni tanto un backup (per esempio su iCloud Drive con “Salva su File”) per non perderli se cambi telefono.") + (st.lastBackup ? ` Ultimo backup: ${fmtDate(new Date(st.lastBackup))}.` : "")));
   // dati
+  v.append(el("div", "sechead", "Aiuto"));
+  const gh = el("div", "group"), rh = el("div", "row tap"); rh.append(el("span", "grow link", "Rivedi il tutorial")); rh.addEventListener("click", () => showTutorial(true)); gh.append(rh);
+  v.append(gh, el("div", "secfoot", "Una breve guida su come usare l'app, in 6 passi."));
   v.append(el("div", "sechead", "Dati"));
   const g8 = el("div", "group");
   const r8 = el("div", "row tap"); r8.append(el("span", "grow link", "Carica dati di esempio")); r8.addEventListener("click", loadSample); g8.append(r8);
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 2.9 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 3.0 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
@@ -1876,7 +1906,56 @@ function showIntro() {
 }
 function openLock() {
   const L = $("lock"); if (A && A.vibrate) A.vibrate(); $("lockErr").hidden = true;
-  L.classList.add("success"); setTimeout(() => { L.classList.add("opening"); setTimeout(() => { L.hidden = true; L.classList.remove("intro", "opening", "success", "pinmode"); }, 560); }, 400);
+  L.classList.add("success"); setTimeout(() => { L.classList.add("opening"); setTimeout(() => { L.hidden = true; L.classList.remove("intro", "opening", "success", "pinmode"); if (!S.settings.tutorialSeen) showTutorial(false); }, 560); }, 400);
+}
+
+/* ==========================================================================
+   Tutorial: al primo accesso e da Impostazioni › Aiuto
+   ========================================================================== */
+const TUTORIAL = [
+  { art: "logo", title: "Benvenuto in Quote Abbonamenti", text: "Dividi Spotify, Netflix e gli altri abbonamenti con amici e famiglia: l'app tiene il conto di <b>chi deve pagare, quanto e quando</b>." },
+  { art: ["abbonamenti", "musica", "video"], title: "Aggiungi gli abbonamenti", text: "In <b>Abbonamenti</b> tocca <b>+</b>: scrivi nome e costo, aggiungi le persone e tocca <b>Dividi in parti uguali</b>. Puoi scegliere anche da che giorno lo dividete." },
+  { art: ["mese", "cloud", "software"], title: "Segna chi ha pagato", text: "In <b>Questo mese</b> vedi chi ti deve quanto. Tocca il <b>cerchio</b> accanto a una quota quando ti arrivano i soldi. I mesi non pagati restano negli <b>arretrati</b>." },
+  { art: ["send", "internet", "notizie"], title: "Chiedi i soldi in un tocco", text: "Con <b>WhatsApp</b>, <b>SMS</b> o <b>Copia</b> mandi un messaggio già pronto con le quote. Metti il tuo <b>numero TWINT</b> in Impostazioni › Messaggi." },
+  { art: ["promemoria", "giochi", "fitness"], title: "Promemoria e scadenze", text: "In <b>Promemoria</b> scegli il giorno del mese: è la scadenza per pagare. Puoi impostarlo anche dalla scheda di ogni abbonamento." },
+  { art: ["impostazioni", "musica", "cloud"], title: "Rendila tua", text: "In <b>Impostazioni</b> scegli un <b>tema</b>, proteggi l'app con <b>Face ID o un codice</b> ed esporta ogni tanto un <b>backup</b>. Questa guida la ritrovi lì, in Aiuto." },
+];
+let tutStep = 0, tutDraw = null;
+function showTutorial(again) {
+  tutStep = 0;
+  const T = $("tut");
+  const close = () => { S.settings.tutorialSeen = true; save(); T.hidden = true; T.textContent = ""; };
+  const draw = () => {
+    const st = TUTORIAL[tutStep], last = tutStep === TUTORIAL.length - 1;
+    T.textContent = "";
+    const bar = el("div", "tbar"); bar.append(el("span", null, `${tutStep + 1} di ${TUTORIAL.length}`));
+    const skip = el("button", null, last ? "" : "Salta"); skip.addEventListener("click", close); bar.append(skip);
+    const body = el("div", "tbody"), art = el("div", "art");
+    if (st.art === "logo") { const b = el("div", "big"); b.innerHTML = appIcon(); art.append(b); }
+    else {
+      const ic = el("div", "ico"); ic.innerHTML = st.art[0] === "send" ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/></svg>' : icon(st.art[0]);
+      art.append(ic);
+      [[st.art[1], "top:-6px;right:-8px", "rotate(10deg)"], [st.art[2], "bottom:-4px;left:-10px", "rotate(-9deg)"]].forEach(([c, pos, rot]) => { const o = el("span", "orb"); o.style.cssText = pos + ";transform:" + rot; o.innerHTML = tile(c); art.append(o); });
+    }
+    const h = el("h2", null, st.title), p = el("p"); p.innerHTML = st.text;
+    body.append(art, h, p);
+    const dots = el("div", "tdots"); TUTORIAL.forEach((_, i) => dots.append(el("i", i === tutStep ? "on" : null)));
+    const foot = el("div", "tfoot");
+    const nx = el("button", "next", last ? (again || S.subs.length ? "Fatto" : "Aggiungi il primo abbonamento") : "Avanti");
+    nx.addEventListener("click", () => { if (!last) { tutStep++; draw(); return; } close(); if (!again && !S.subs.length) { tab = "abbonamenti"; render(); editSub(null); } });
+    foot.append(nx);
+    if (last && !again && !S.subs.length) { const ex = el("button", "alt", "Prova con dati di esempio"); ex.addEventListener("click", () => { close(); loadSample(); }); foot.append(ex); }
+    else { const bk = el("button", "alt", "Indietro"); if (tutStep > 0) bk.addEventListener("click", () => { tutStep--; draw(); }); else bk.style.visibility = "hidden"; foot.append(bk); }
+    T.append(bar, body, dots, foot);
+    // scorrimento col dito
+    let x0 = null;
+    body.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+    body.addEventListener("touchend", (e) => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null;
+      if (dx < -50 && !last) { tutStep++; draw(); } else if (dx > 50 && tutStep > 0) { tutStep--; draw(); } });
+  };
+  tutDraw = draw;
+  draw();
+  T.hidden = false;
 }
 function tryUnlock() {
   if ($("lock").hidden) return;
@@ -1918,7 +1997,7 @@ window.onNotificationsChanged = () => render();
 window.onNightModeChanged = () => applyTheme();
 window.toast = toast;
 /** Tasto Indietro di Android: chiude il foglio aperto; altrimenti lascia uscire. */
-window.onBack = () => { if (!$("sheet").hidden) { closeSheet(); return true; } if (tab !== "mese") { tab = "mese"; render(); return true; } return false; };
+window.onBack = () => { if (!$("tut").hidden) { if (tutStep > 0) { tutStep--; tutDraw && tutDraw(); } else { S.settings.tutorialSeen = true; save(); $("tut").hidden = true; } return true; } if (!$("sheet").hidden) { closeSheet(); return true; } if (tab !== "mese") { tab = "mese"; render(); return true; } return false; };
 
 // ---------- avvio ----------
 if (!A) {

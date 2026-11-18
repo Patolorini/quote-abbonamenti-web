@@ -13,6 +13,7 @@ final class AppStore {
     var viewM = Date().mo
     var remY = Date().y
     var remM = Date().mo
+    var tutorialAgain = false
 
     @ObservationIgnored private let db = Database()
     @ObservationIgnored private var saveTask: Task<Void, Never>?
@@ -21,6 +22,7 @@ final class AppStore {
     init() {
         var d = db.load()
         d.settings.migrate()
+        if d.settings.tutorialSeen == nil { d.settings.tutorialSeen = !d.subs.isEmpty } // chi usa già l'app non lo rivede
         data = d
     }
 

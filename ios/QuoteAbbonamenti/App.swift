@@ -48,9 +48,13 @@ struct RootView: View {
                 VStack { Spacer(); ToastView(text: t).padding(.bottom, 92) }
                     .transition(.opacity).allowsHitTesting(false)
             }
+            if !lock.visible && (store.data.settings.tutorialSeen != true || store.tutorialAgain) {
+                TutorialView(again: store.tutorialAgain).transition(.move(edge: .bottom).combined(with: .opacity)).zIndex(5)
+            }
             if lock.visible { LockScreen(lock: lock).transition(.opacity).zIndex(10) }
         }
         .animation(.easeOut(duration: 0.2), value: store.toast)
+        .animation(.easeOut(duration: 0.3), value: store.tutorialAgain)
         .environment(store)
         .environment(\.pal, pal)
         .tint(pal.accent)
