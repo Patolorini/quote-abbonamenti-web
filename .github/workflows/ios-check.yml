@@ -1,0 +1,9 @@
+name: Prova Mac
+on:
+  push:
+    branches: [claude/ios-ci-test]
+jobs:
+  check:
+    runs-on: macos-15
+    steps:
+      - run: xcodebuild -version && xcrun simctl list runtimes | head -5 && which xcodegen || brew list | head -3
