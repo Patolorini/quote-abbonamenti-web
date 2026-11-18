@@ -16,7 +16,7 @@ struct CalendarGrid: View {
             HStack {
                 Button { step(-1) } label: { Image(systemName: "chevron.left") }.accessibilityLabel("Mese precedente")
                 Spacer()
-                Text("\(cap(MONTHS[m])) \(y)").font(.system(size: 16, weight: .bold)).foregroundStyle(pal.fg)
+                Text(verbatim: "\(cap(MONTHS[m])) \(y)").font(.system(size: 16, weight: .bold)).foregroundStyle(pal.fg)
                 Spacer()
                 Button { step(1) } label: { Image(systemName: "chevron.right") }.accessibilityLabel("Mese successivo")
             }.foregroundStyle(pal.accent).font(.system(size: 17, weight: .semibold))
