@@ -14,14 +14,14 @@ struct TutorialView: View {
         let first = !again && store.data.subs.isEmpty
         VStack(spacing: 0) {
             HStack {
-                Text("Come funziona · 50 secondi").font(.system(size: 14)).foregroundStyle(pal.ink2)
+                Text("Come funziona · 30 secondi").font(.system(size: 14)).foregroundStyle(pal.ink2)
                 Spacer()
                 Button(first ? "Salta" : "Chiudi") { close() }.foregroundStyle(pal.accent)
             }.padding(.horizontal, 20).frame(height: 44)
             Group {
                 if let player {
                     VideoPlayer(player: player)
-                        .aspectRatio(720.0 / 1558.0, contentMode: .fit)
+                        .aspectRatio(720.0 / 1280.0, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                         .shadow(color: .black.opacity(0.35), radius: 16, y: 10)
                 } else {

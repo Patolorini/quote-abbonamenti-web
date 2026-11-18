@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=720">
+<title>Studio video tutorial</title>
+<style>
+  /* Pagina di regia per registrare il video tutorial: l'app vera dentro un iPhone. */
+  html, body { margin: 0; width: 720px; height: 1280px; overflow: hidden; font-family: -apple-system, "SF Pro Display", "Inter", system-ui, sans-serif; }
+  body { background: radial-gradient(120% 80% at 50% 0%, #1FB39E 0%, #0F8A7A 38%, #0A5F54 72%, #073F38 100%); color: #fff; }
+  .glow { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .35; }
+  .head { position: absolute; left: 0; right: 0; top: 70px; text-align: center; padding: 0 50px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; background: rgb(255 255 255 / .16); border: 1px solid rgb(255 255 255 / .25); padding: 7px 16px; border-radius: 999px; font-weight: 700; font-size: 18px; letter-spacing: .02em; }
+  .chip b { width: 26px; height: 26px; border-radius: 50%; background: #F6C343; color: #3a2a00; display: grid; place-items: center; font-size: 15px; }
+  h1 { font-size: 46px; line-height: 1.08; margin: 18px 0 10px; font-weight: 800; letter-spacing: -.01em; }
+  .sub { font-size: 22px; line-height: 1.35; opacity: .88; margin: 0; }
+  .swap { transition: opacity .35s ease, transform .35s ease; }
+  .swap.out { opacity: 0; transform: translateY(14px); }
+  .phone { position: absolute; left: 50%; top: 330px; width: 390px; height: 844px; transform: translateX(-50%) scale(1.04); transform-origin: top center;
+           border-radius: 58px; padding: 14px; background: #0b0f0e; box-shadow: 0 50px 90px -30px rgb(0 0 0 / .65), inset 0 0 0 2px #2a3331; }
+  .phone .screen { width: 390px; height: 844px; border-radius: 46px; overflow: hidden; position: relative; background: #fff; }
+  .phone .island { position: absolute; top: 26px; left: 50%; width: 118px; height: 34px; margin-left: -59px; background: #000; border-radius: 20px; z-index: 5; }
+  iframe { width: 390px; height: 844px; border: 0; display: block; }
+  .card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center; padding: 60px;
+          background: radial-gradient(120% 80% at 50% 0%, #1FB39E 0%, #0F8A7A 38%, #0A5F54 72%, #073F38 100%); z-index: 10; transition: opacity .5s ease; }
+  .card.hidden { opacity: 0; pointer-events: none; }
+  .card .logo { width: 170px; height: 170px; border-radius: 40px; overflow: hidden; box-shadow: 0 30px 60px -20px rgb(0 0 0 / .55); animation: pop .7s cubic-bezier(.34, 1.56, .64, 1) both; }
+  .card .logo svg { width: 100%; height: 100%; display: block; }
+  .card h2 { font-size: 54px; margin: 18px 0 0; font-weight: 800; animation: rise .6s ease .2s both; }
+  .card p { font-size: 26px; margin: 0; opacity: .9; line-height: 1.35; animation: rise .6s ease .35s both; }
+  @keyframes pop { from { transform: scale(.4); opacity: 0 } to { transform: none; opacity: 1 } }
+  @keyframes rise { from { transform: translateY(20px); opacity: 0 } to { transform: none; opacity: 1 } }
+</style>
+</head>
+<body>
+  <div class="glow" style="width:520px;height:520px;left:-200px;top:-120px;background:#5EE6C8"></div>
+  <div class="glow" style="width:480px;height:480px;right:-220px;bottom:-100px;background:#F6C343;opacity:.18"></div>
+  <div class="head swap out" id="head"><span class="chip" id="chip"></span><h1 id="title"></h1><p class="sub" id="sub"></p></div>
+  <div class="phone"><div class="screen"><div class="island"></div><iframe id="app" src="../index.html"></iframe></div></div>
+  <div class="card" id="card"></div>
+<script>
+  // Comandi chiamati dallo script di registrazione.
+  window.setStep = (n, title, sub) => {
+    const h = document.getElementById('head');
+    h.classList.add('out');
+    setTimeout(() => {
+      document.getElementById('chip').innerHTML = n ? `<b>${n}</b>Passo ${n} di 5` : 'Quote Abbonamenti';
+      document.getElementById('title').textContent = title;
+      document.getElementById('sub').textContent = sub || '';
+      h.classList.remove('out');
+    }, 300);
+  };
+  window.showCard = (html) => { const c = document.getElementById('card'); c.innerHTML = html; c.classList.remove('hidden'); };
+  window.hideCard = () => document.getElementById('card').classList.add('hidden');
+</script>
+</body>
+</html>

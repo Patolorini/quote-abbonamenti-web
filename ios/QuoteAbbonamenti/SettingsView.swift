@@ -247,7 +247,7 @@ struct SettingsView: View {
     @ViewBuilder private var dataSection: some View {
         SecHead(text: "Aiuto")
         Card { Row(last: true, action: { store.tutorialAgain = true }) { LinkText("Guarda il video tutorial") } }
-        SecFoot("Un mini video di 50 secondi su come usare l'app.")
+        SecFoot("Un mini video di 30 secondi su come usare l'app.")
         SecHead(text: "Dati")
         Card {
             Row(action: { store.loadSample() }) { LinkText("Carica dati di esempio") }

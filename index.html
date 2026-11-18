@@ -246,7 +246,7 @@ html.has-deco .tabbar { background: color-mix(in srgb, var(--cell) 90%, transpar
 .tut .tdots i { width: 8px; height: 8px; border-radius: 4px; background: var(--sep); transition: width .25s, background .25s }
 .tut .tdots i.on { width: 22px; background: var(--accent) }
 .tut .tbody.vid { padding: 10px 16px 14px; justify-content: center }
-.tut video { height: 100%; max-height: 100%; max-width: 100%; aspect-ratio: 720 / 1558; border-radius: 22px; background: #000; box-shadow: 0 18px 40px -16px rgb(0 0 0 / .45); object-fit: contain }
+.tut video { height: 100%; max-height: 100%; max-width: 100%; aspect-ratio: 720 / 1280; border-radius: 22px; background: #000; box-shadow: 0 18px 40px -16px rgb(0 0 0 / .45); object-fit: contain }
 .tut .tfoot .next.pulse { animation: pulse 1.2s ease-in-out 2 }
 @keyframes pulse { 50% { transform: scale(1.04) } }
 .tut .tfoot { padding: 0 var(--sr) calc(18px + env(safe-area-inset-bottom, 0px)) var(--sl); display: flex; flex-direction: column; gap: 10px }
@@ -1706,14 +1706,14 @@ function renderSettings(v) {
   // dati
   v.append(el("div", "sechead", "Aiuto"));
   const gh = el("div", "group"), rh = el("div", "row tap"); rh.append(el("span", "grow link", "Guarda il video tutorial")); rh.addEventListener("click", () => showTutorial(true)); gh.append(rh);
-  v.append(gh, el("div", "secfoot", "Un mini video di 50 secondi su come usare l'app."));
+  v.append(gh, el("div", "secfoot", "Un mini video di 30 secondi su come usare l'app."));
   v.append(el("div", "sechead", "Dati"));
   const g8 = el("div", "group");
   const r8 = el("div", "row tap"); r8.append(el("span", "grow link", "Carica dati di esempio")); r8.addEventListener("click", loadSample); g8.append(r8);
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 3.1 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 3.2 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
@@ -1917,13 +1917,13 @@ function openLock() {
    Tutorial: al primo accesso e da Impostazioni › Aiuto
    ========================================================================== */
 let tutClose = null;
-/** Mini video tutorial (52 secondi) con i pulsanti per continuare. */
+/** Mini video tutorial (30 secondi) con i pulsanti per continuare. */
 function showTutorial(again) {
   const T = $("tut"), first = !again && !S.subs.length;
   const close = () => { S.settings.tutorialSeen = true; save(); const v = T.querySelector("video"); if (v) v.pause(); T.hidden = true; T.textContent = ""; tutClose = null; };
   tutClose = close;
   T.textContent = "";
-  const bar = el("div", "tbar"); bar.append(el("span", null, "Come funziona · 50 secondi"));
+  const bar = el("div", "tbar"); bar.append(el("span", null, "Come funziona · 30 secondi"));
   const skip = el("button", null, first ? "Salta" : "Chiudi"); skip.addEventListener("click", close); bar.append(skip);
   const body = el("div", "tbody vid");
   const v = el("video"); v.src = "tutorial.mp4"; v.muted = true; v.autoplay = true; v.controls = true; v.preload = "auto";

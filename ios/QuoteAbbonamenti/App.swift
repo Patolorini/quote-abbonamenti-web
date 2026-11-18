@@ -59,7 +59,22 @@ struct RootView: View {
         .environment(\.pal, pal)
         .tint(pal.accent)
         .preferredColorScheme(pal.dark ? .dark : .light)
-        .onAppear { lock.start(store) }
+        .onAppear {
+            // Modalità demo (solo per le foto automatiche su GitHub): -demo [-tab nome] [-theme nome]
+            let args = ProcessInfo.processInfo.arguments
+            if args.contains("-demo") {
+                if store.data.subs.isEmpty { store.loadSample() }
+                store.toast = nil
+                store.data.settings.tutorialSeen = true
+                store.data.settings.lockMode = "nessuno"
+                if let i = args.firstIndex(of: "-tab"), i + 1 < args.count { store.tab = args[i + 1] }
+                store.data.settings.theme = args.firstIndex(of: "-theme").flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil } ?? "predefinito"
+                lock.visible = false
+                if args.contains("-intro") { lock.start(store) }
+                return
+            }
+            lock.start(store)
+        }
         .onChange(of: phase) { _, p in
             if p == .background { store.saveNow(); lock.wentAway() }
             if p == .active { lock.cameBack(store) }

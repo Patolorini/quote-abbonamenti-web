@@ -35,6 +35,29 @@ jobs:
           SIM=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in sorted(d.items(), reverse=True) if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
           xcodebuild test -project QuoteAbbonamenti.xcodeproj -scheme QuoteAbbonamenti -destination "id=$SIM" CODE_SIGNING_ALLOWED=NO 2>&1 | tee test.log | xcbeautify --renderer github-actions
 
+      - name: Foto dello schermo (iPhone 14 e iPhone 16 Pro Max)
+        working-directory: ios
+        continue-on-error: true
+        run: |
+          set -e
+          xcodebuild build -project QuoteAbbonamenti.xcodeproj -scheme QuoteAbbonamenti -sdk iphonesimulator -configuration Debug \
+            -derivedDataPath DD -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO -quiet
+          APP=DD/Build/Products/Debug-iphonesimulator/QuoteAbbonamenti.app
+          RT=$(xcrun simctl list runtimes -j | python3 -c "import json,sys; r=[x for x in json.load(sys.stdin)['runtimes'] if x['isAvailable'] and x['platform']=='iOS']; print(r[-1]['identifier'])")
+          mkdir -p shots
+          for DEV in iPhone-14 iPhone-16-Pro-Max; do
+            UDID=$(xcrun simctl create "Foto $DEV" "com.apple.CoreSimulator.SimDeviceType.$DEV" "$RT")
+            xcrun simctl boot "$UDID"; xcrun simctl bootstatus "$UDID" -b > /dev/null
+            xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 || true
+            xcrun simctl install "$UDID" "$APP"
+            shot() { xcrun simctl launch --terminate-running-process "$UDID" ch.quoteabbonamenti.app "$@" > /dev/null; }
+            for TAB in mese abbonamenti statistiche promemoria impostazioni; do shot -demo -tab $TAB; sleep 6; xcrun simctl io "$UDID" screenshot "shots/$DEV-$TAB.png"; done
+            for TH in stelle sakura; do shot -demo -tab mese -theme $TH; sleep 6; xcrun simctl io "$UDID" screenshot "shots/$DEV-$TH.png"; done
+            shot -demo -intro; sleep 2; xcrun simctl io "$UDID" screenshot "shots/$DEV-intro.png"
+            xcrun simctl shutdown "$UDID"
+          done
+          ls shots
+
       - name: Compila per iPhone (senza firma)
         working-directory: ios
         run: |
@@ -61,6 +84,15 @@ jobs:
           gh release delete iphone --yes --cleanup-tag 2>/dev/null || true
           gh release create iphone ios/QuoteAbbonamenti.ipa --title "App iPhone (build ${{ github.run_number }})" \
             --notes "App nativa per iPhone, da installare con Sideloadly o AltStore. Compilata da ${{ github.sha }}." --latest=false
+
+      - name: Pubblica le foto (release "iphone-foto")
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete iphone-foto --yes --cleanup-tag 2>/dev/null || true
+          gh release create iphone-foto ios/shots/*.png --title "Foto dell'app iPhone (build ${{ github.run_number }})" --notes "Foto automatiche dal simulatore." --latest=false
 
       - name: Log (in caso di errore)
         if: failure()
