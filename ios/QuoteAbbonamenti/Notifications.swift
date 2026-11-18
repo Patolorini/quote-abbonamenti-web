@@ -47,7 +47,7 @@ extension AppData {
                 let f = D(d.y, d.mo, d.d + fu, d.hh, d.mi)
                 if f <= n { continue }
                 let mk = mkey(b.y, b.mo)
-                var e = months[mk] ?? (f, b.y, b.mo, [:])
+                var e: (at: Date, y: Int, m: Int, subs: [String: Sub]) = months[mk] ?? (at: f, y: b.y, m: b.mo, subs: [String: Sub]())
                 if f < e.at { e.at = f }
                 for s in subsOf(r) { e.subs[s.id] = s }
                 months[mk] = e

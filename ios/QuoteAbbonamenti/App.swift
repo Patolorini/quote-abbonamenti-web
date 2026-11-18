@@ -82,7 +82,7 @@ struct TabBar: View {
             }
         }
         .background(alignment: .top) {
-            (pal.deco != nil ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(pal.cellSolid))
+            Rectangle().fill(pal.deco != nil ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(pal.cellSolid))
                 .overlay(alignment: .top) { Rectangle().fill(pal.sep).frame(height: 0.5) }
                 .ignoresSafeArea(edges: .bottom)
         }

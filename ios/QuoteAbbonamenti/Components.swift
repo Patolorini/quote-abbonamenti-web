@@ -75,7 +75,7 @@ struct Seg<T: Hashable>: View {
     var body: some View {
         HStack(spacing: 2) {
             ForEach(options.indices, id: \.self) { i in
-                let (v, lab) = options[i]
+                let v = options[i].0, lab = options[i].1
                 let sel = v == value
                 Button { if !disabled.contains(v) { withAnimation(.easeOut(duration: 0.15)) { value = v } } } label: {
                     Text(lab).font(.system(size: 14, weight: sel ? .bold : .regular)).lineLimit(1).minimumScaleFactor(0.7)

@@ -180,10 +180,11 @@ extension AppData {
         }
         if owed.isEmpty {
             let ren = subList.filter { isRenewal($0, m + 1) }
-            return ren.isEmpty ? nil : ("Rinnovo abbonamenti", ren.map(\.name).joined(separator: ", "))
+            if ren.isEmpty { return nil }
+            return (title: "Rinnovo abbonamenti", body: ren.map(\.name).joined(separator: ", "))
         }
         let total = owed.reduce(0) { $0 + $1.total }
-        return ("Da incassare: \(chf(total))", owed.map { "\($0.name): \(chf($0.total)) (\($0.subs.joined(separator: ", ")))" }.joined(separator: "\n") + "\nTocca per segnare chi ha pagato.")
+        return (title: "Da incassare: \(chf(total))", body: owed.map { "\($0.name): \(chf($0.total)) (\($0.subs.joined(separator: ", ")))" }.joined(separator: "\n") + "\nTocca per segnare chi ha pagato.")
     }
 
     func paymentsCSV() -> String {

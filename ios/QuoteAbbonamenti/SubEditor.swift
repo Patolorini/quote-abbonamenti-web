@@ -190,7 +190,8 @@ struct SubEditor: View {
     }
 
     @ViewBuilder private var reminderSection: some View {
-        let shared = store.data.reminders.filter { $0.on && ($0.all || (original.map { s in $0.subs.contains(s.id) } ?? false)) && $0.id != ownRem?.id }
+        let sid = original?.id ?? ""
+        let shared = store.data.reminders.filter { r in r.on && (r.all || (!sid.isEmpty && r.subs.contains(sid))) && r.id != ownRem?.id }
         SecHead(text: "Promemoria")
         Card {
             ForEach(shared) { r in

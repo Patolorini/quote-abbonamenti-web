@@ -107,11 +107,12 @@ struct StatsView: View {
         let rows: [(name: String, n: Int, unpaid: Int, avg: Double)] = {
             var st: [String: (name: String, delays: [Int], unpaid: Int)] = [:]
             for dd in months { for p in store.data.peopleFor(dd.y, dd.mo) { for i in p.items {
-                var e = st[p.key] ?? (p.name, [], 0)
+                var e: (name: String, delays: [Int], unpaid: Int) = st[p.key] ?? (name: p.name, delays: [Int](), unpaid: 0)
                 if let pd = i.paid { e.delays.append(max(0, daysBetween(i.due, dateOf(pd.on)))) } else if i.due < now() { e.unpaid += 1 }
                 st[p.key] = e
             } } }
-            return st.values.map { e in (e.name, e.delays.count, e.unpaid, e.delays.isEmpty ? 0 : Double(e.delays.reduce(0, +)) / Double(e.delays.count)) }
+            let list: [(name: String, n: Int, unpaid: Int, avg: Double)] = st.values.map { e in (name: e.name, n: e.delays.count, unpaid: e.unpaid, avg: e.delays.isEmpty ? 0 : Double(e.delays.reduce(0, +)) / Double(e.delays.count)) }
+            return list
                 .sorted { $0.unpaid != $1.unpaid ? $0.unpaid < $1.unpaid : $0.avg < $1.avg }
         }()
         if !rows.isEmpty {

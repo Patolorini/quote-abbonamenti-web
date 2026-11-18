@@ -119,7 +119,8 @@ struct LockScreen: View {
                         .background(Color(hex: "#D7372F", opacity: 0.8), in: Capsule()).padding(.bottom, 12)
                 }
                 if lock.showPin {
-                    PinPad(light: true, extra: mode == "bio" ? (LockModel.bioName, { lock.tryBio() }) : nil) { pin in
+                    let bioExtra: (String, () -> Void)? = mode == "bio" ? (LockModel.bioName, { lock.tryBio() }) : nil
+                    PinPad(light: true, extra: bioExtra) { pin in
                         lock.checkPin(pin, store.data.settings)
                     }.padding(.bottom, 20)
                 } else {
