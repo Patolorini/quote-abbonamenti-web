@@ -1,5 +1,5 @@
 // Tiene l'app disponibile anche senza internet. Cambia VERSION a ogni aggiornamento.
-const VERSION = "quote-v15";
+const VERSION = "quote-v16";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icons/apple-touch-icon.png", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
