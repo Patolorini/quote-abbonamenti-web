@@ -68,6 +68,7 @@ struct RootView: View {
                 store.data.settings.tutorialSeen = true
                 store.data.settings.lockMode = "nessuno"
                 if let i = args.firstIndex(of: "-tab"), i + 1 < args.count { store.tab = args[i + 1] }
+                if args.contains("-remNext") { let d = D(now().y, now().mo + 1, 1); store.remY = d.y; store.remM = d.mo }
                 store.data.settings.theme = args.firstIndex(of: "-theme").flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil } ?? "predefinito"
                 lock.visible = false
                 if args.contains("-intro") { lock.start(store) }

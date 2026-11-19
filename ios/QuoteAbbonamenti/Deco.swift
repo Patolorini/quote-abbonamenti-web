@@ -56,7 +56,11 @@ struct DecoPainter {
         switch kind {
         case "sakura":
             let cols = dark ? ["#FF9CC2", "#F7B6CF", "#E8779F"] : ["#F4A3C1", "#F7BBD2", "#E77FA6"]
-            for f in fallers(16, 12, 22, 9, 17) { drawFaller(&ctx, size, t, f) { petal(color: Color(hex: cols[f.i % 3])) } }
+            drawBranch(&ctx, size, t, cols)
+            for f in fallers(20, 14, 28, 10, 18) {
+                if f.i % 2 == 0 { drawFaller(&ctx, size, t, f) { flowerShape(color: Color(hex: cols[f.i % 3])) } ; drawFaller(&ctx, size, t, f) { (Path(ellipseIn: CGRect(x: 8.1, y: 8.1, width: 3.8, height: 3.8)), .color(Color(hex: "#FFD966"))) } }
+                else { drawFaller(&ctx, size, t, f) { petal(color: Color(hex: cols[f.i % 3])) } }
+            }
         case "autunno":
             let cols = ["#D2601F", "#E9A23B", "#B8331B", "#C98A06"]
             for f in fallers(13, 16, 28, 10, 18) { drawFaller(&ctx, size, t, f) { leaf(color: Color(hex: cols[f.i % 4])) } }
@@ -129,6 +133,49 @@ struct DecoPainter {
         p.addCurve(to: CGPoint(x: 10, y: 19), control1: CGPoint(x: 5.5, y: 5), control2: CGPoint(x: 5, y: 11))
         p.addCurve(to: CGPoint(x: 10, y: 1), control1: CGPoint(x: 15, y: 11), control2: CGPoint(x: 14.5, y: 5))
         return (p, .color(color))
+    }
+    /// Fiore di ciliegio: cinque petali intorno al centro (in un quadrato 20×20).
+    private func flowerPath(scale k: Double = 1) -> Path {
+        var one = Path()
+        one.move(to: CGPoint(x: 0, y: -1))
+        one.addCurve(to: CGPoint(x: -1.3, y: -8.6), control1: CGPoint(x: -2.6, y: -2.6), control2: CGPoint(x: -3.4, y: -6.2))
+        one.addCurve(to: CGPoint(x: 0, y: -8.6), control1: CGPoint(x: -0.8, y: -7.8), control2: CGPoint(x: -0.4, y: -7.8))
+        one.addCurve(to: CGPoint(x: 1.3, y: -8.6), control1: CGPoint(x: 0.4, y: -7.8), control2: CGPoint(x: 0.8, y: -7.8))
+        one.addCurve(to: CGPoint(x: 0, y: -1), control1: CGPoint(x: 3.4, y: -6.2), control2: CGPoint(x: 2.6, y: -2.6))
+        one.closeSubpath()
+        var all = Path()
+        for a in [0.0, 72, 144, 216, 288] { all.addPath(one, transform: CGAffineTransform(rotationAngle: a * .pi / 180).concatenating(CGAffineTransform(scaleX: k, y: k))) }
+        return all
+    }
+    private func flowerShape(color: Color) -> (Path, GraphicsContext.Shading) {
+        (flowerPath().applying(CGAffineTransform(translationX: 10, y: 10)), .color(color))
+    }
+    /// Ramo di ciliegio fiorito in alto a destra, che oscilla piano.
+    private func drawBranch(_ ctx: inout GraphicsContext, _ size: CGSize, _ t: Double, _ cols: [String]) {
+        var g = ctx
+        let w = min(size.width * 0.62, 250.0), k = w / 220
+        g.opacity = 0.5
+        g.translateBy(x: size.width + 10, y: 2)
+        g.rotate(by: .degrees(sin(t / 7 * .pi) * 2.2))
+        g.translateBy(x: -w, y: 0)
+        g.scaleBy(x: k, y: k)
+        let wood = Color(hex: dark ? "#8A5A4A" : "#6B3B2E")
+        var b = Path()
+        b.move(to: CGPoint(x: 222, y: 6))
+        b.addCurve(to: CGPoint(x: 96, y: 70), control1: CGPoint(x: 170, y: 18), control2: CGPoint(x: 130, y: 40))
+        b.addCurve(to: CGPoint(x: 6, y: 132), control1: CGPoint(x: 62, y: 100), control2: CGPoint(x: 40, y: 120))
+        g.stroke(b, with: .color(wood), style: StrokeStyle(lineWidth: 5, lineCap: .round))
+        var tw = Path()
+        tw.move(to: CGPoint(x: 150, y: 30)); tw.addCurve(to: CGPoint(x: 156, y: 78), control1: CGPoint(x: 142, y: 48), control2: CGPoint(x: 144, y: 64))
+        tw.move(to: CGPoint(x: 104, y: 64)); tw.addCurve(to: CGPoint(x: 144, y: 64), control1: CGPoint(x: 114, y: 70), control2: CGPoint(x: 130, y: 70))
+        tw.move(to: CGPoint(x: 60, y: 100)); tw.addCurve(to: CGPoint(x: 76, y: 134), control1: CGPoint(x: 58, y: 114), control2: CGPoint(x: 64, y: 126))
+        g.stroke(tw, with: .color(wood), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+        let blooms: [(Double, Double, Double, Int)] = [(178, 22, 1.5, 0), (150, 52, 1.2, 2), (122, 48, 1.35, 1), (156, 80, 1.1, 0), (96, 72, 1.25, 2), (64, 100, 1.3, 0), (144, 64, 0.9, 1), (76, 132, 1.05, 1), (30, 124, 1, 2)]
+        for bl in blooms {
+            let p = flowerPath(scale: bl.2).applying(CGAffineTransform(translationX: bl.0, y: bl.1))
+            g.fill(p, with: .color(Color(hex: cols[bl.3])))
+            g.fill(Path(ellipseIn: CGRect(x: bl.0 - 1.8 * bl.2, y: bl.1 - 1.8 * bl.2, width: 3.6 * bl.2, height: 3.6 * bl.2)), with: .color(Color(hex: "#FFD966")))
+        }
     }
     private func leaf(color: Color) -> (Path, GraphicsContext.Shading) {
         var p = Path()

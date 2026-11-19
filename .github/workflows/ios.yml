@@ -52,6 +52,7 @@ jobs:
             xcrun simctl install "$UDID" "$APP"
             shot() { xcrun simctl launch --terminate-running-process "$UDID" ch.quoteabbonamenti.app "$@" > /dev/null; }
             for TAB in mese abbonamenti statistiche promemoria impostazioni; do shot -demo -tab $TAB; sleep 6; xcrun simctl io "$UDID" screenshot "shots/$DEV-$TAB.png"; done
+            shot -demo -tab promemoria -remNext; sleep 6; xcrun simctl io "$UDID" screenshot "shots/$DEV-promemoria-mese-dopo.png"
             for TH in stelle sakura; do shot -demo -tab mese -theme $TH; sleep 6; xcrun simctl io "$UDID" screenshot "shots/$DEV-$TH.png"; done
             shot -demo -intro; sleep 2; xcrun simctl io "$UDID" screenshot "shots/$DEV-intro.png"
             xcrun simctl shutdown "$UDID"

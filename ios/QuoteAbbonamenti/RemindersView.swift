@@ -20,13 +20,30 @@ struct CalendarGrid: View {
                 Spacer()
                 Button { step(1) } label: { Image(systemName: "chevron.right") }.accessibilityLabel("Mese successivo")
             }.foregroundStyle(pal.accent).font(.system(size: 17, weight: .semibold))
-            let cols = Array(repeating: GridItem(.flexible(), spacing: 2), count: 7)
-            LazyVGrid(columns: cols, spacing: 4) {
-                ForEach(Array("LMMGVSD").indices, id: \.self) { i in Text(String(Array("LMMGVSD")[i])).font(.system(size: 11, weight: .semibold)).foregroundStyle(pal.ink2) }
-                ForEach(0..<offset, id: \.self) { _ in Color.clear.frame(height: 36) }
-                ForEach(1...n, id: \.self) { d in dayCell(d, n) }
-                if ghostTo > n { ForEach((n + 1)...ghostTo, id: \.self) { d in Text("\(d)").font(.system(size: 15)).foregroundStyle(pal.ink2.opacity(0.4)).strikethrough().frame(height: 36) } }
+            // griglia a settimane: ogni casella ha un identificativo unico (con LazyVGrid i giorni si confondevano)
+            HStack(spacing: 2) {
+                ForEach(0..<7, id: \.self) { i in
+                    Text(String(Array("LMMGVSD")[i])).font(.system(size: 11, weight: .semibold)).foregroundStyle(pal.ink2).frame(maxWidth: .infinity)
+                }
             }
+            let cells: [Int] = Array(repeating: 0, count: offset) + Array(1...n) + (ghostTo > n ? Array((n + 1)...ghostTo).map { -$0 } : [])
+            let weeks = stride(from: 0, to: cells.count, by: 7).map { Array(cells[$0..<min($0 + 7, cells.count)]) }
+            VStack(spacing: 4) {
+                ForEach(weeks.indices, id: \.self) { w in
+                    HStack(spacing: 2) {
+                        ForEach(0..<7, id: \.self) { k in
+                            let v = k < weeks[w].count ? weeks[w][k] : 0
+                            Group {
+                                if v > 0 { dayCell(v, n) }
+                                else if v < 0 { Text("\(-v)").font(.system(size: 15)).foregroundStyle(pal.ink2.opacity(0.4)).strikethrough() }
+                                else { Color.clear }
+                            }
+                            .frame(maxWidth: .infinity).frame(height: 36)
+                        }
+                    }
+                }
+            }
+            .id("\(y)-\(m)")
         }.padding(12)
     }
 
