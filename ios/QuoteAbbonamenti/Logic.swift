@@ -82,6 +82,13 @@ func nextWithMonth(_ r: Reminder, _ count: Int) -> [(date: Date, y: Int, m: Int)
     return out
 }
 func firesIn(_ r: Reminder, _ y: Int, _ m: Int) -> [Date] { sequence(r, until: D(y, m + 2, 1)).filter { $0.y == y && $0.mo == m } }
+/// Promemoria da mostrare nel calendario: anche nei mesi passati (prima che fosse creato), come "già passato".
+func shownIn(_ r: Reminder, _ y: Int, _ m: Int) -> [Date] {
+    let f = firesIn(r, y, m), n = now()
+    if !f.isEmpty || r.rep != "mese" || D(y, m, 1) > n { return f }
+    let d = occurrence(r, y, m), last = lastOcc(r)
+    return d < n && (last == nil || d <= last!) ? [d] : []
+}
 func dayText(_ r: Reminder) -> String { r.day == 0 ? "L'ultimo giorno del mese" : r.day > 28 ? "Il \(r.day) (o l'ultimo giorno)" : "Il \(r.day) del mese" }
 func whenText(_ r: Reminder) -> String {
     r.rep == "una" ? "Una volta: \(withYear(occurrence(r, r.onceY, r.onceM))) alle \(two(r.h)):\(two(r.m))" : "\(dayText(r)) alle \(two(r.h)):\(two(r.m))"

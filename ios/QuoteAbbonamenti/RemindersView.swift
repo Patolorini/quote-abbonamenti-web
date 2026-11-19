@@ -50,10 +50,11 @@ struct CalendarGrid: View {
     @ViewBuilder private func dayCell(_ d: Int, _ n: Int) -> some View {
         let mk = mark(d, n), date = D(y, m, d), we = date.wd == 0 || date.wd == 6, today = sameDay(date, now())
         let label = Text("\(d)").font(.system(size: 15, weight: mk.contains("on") || today ? .bold : .regular))
-            .foregroundStyle(mk.contains("on") ? pal.onAccent : mk.contains("paused") || mk.contains("fires") ? pal.accent : we ? pal.ink2 : pal.fg)
+            .foregroundStyle(mk.contains("past") ? pal.accent : mk.contains("on") ? pal.onAccent : mk.contains("paused") || mk.contains("fires") ? pal.accent : we ? pal.ink2 : pal.fg)
             .frame(width: 34, height: 34)
             .background {
-                if mk.contains("on") { Circle().fill(pal.accent) }
+                if mk.contains("past") { Circle().strokeBorder(pal.accent.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])) }
+                else if mk.contains("on") { Circle().fill(pal.accent) }
                 else if mk.contains("paused") || mk.contains("fires") { Circle().fill(pal.accentSoft) }
                 else if today { Circle().strokeBorder(pal.accent, lineWidth: 1.5) }
             }
@@ -93,12 +94,20 @@ struct RemindersView: View {
                     } else {
                         Card {
                             CalendarGrid(y: $st.remY, m: $st.remM, mark: { d, _ in
-                                var on = false, paused = false
-                                for r in store.data.reminders where firesIn(r, store.remY, store.remM).contains(where: { $0.d == d }) { if r.on { on = true } else { paused = true } }
-                                return on ? ["on"] : paused ? ["paused"] : []
+                                var on = false, paused = false, past = false
+                                let n = now()
+                                for r in store.data.reminders { for x in shownIn(r, store.remY, store.remM) where x.d == d { if x < n { past = true } else if r.on { on = true } else { paused = true } } }
+                                return on ? ["on"] : paused ? ["paused"] : past ? ["past"] : []
                             })
-                            Text("\(cap(MONTHS[store.remM])) ha \(daysIn(store.remY, store.remM)) giorni. Pieno = promemoria attivo, chiaro = in pausa.")
-                                .font(.system(size: 13)).foregroundStyle(pal.ink2).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
+                            Text("\(cap(MONTHS[store.remM])) ha \(daysIn(store.remY, store.remM)) giorni. Pieno = promemoria in arrivo, chiaro = in pausa, tratteggiato = già passato.")
+                                .font(.system(size: 13)).foregroundStyle(pal.ink2).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 8)
+                            let pastList = store.data.reminders.flatMap { r in shownIn(r, store.remY, store.remM).filter { $0 < now() }.map { x in "\(r.label.isEmpty ? (r.all ? "Tutti gli abbonamenti" : store.data.subsOf(r).map(\.name).joined(separator: ", ")) : r.label): \(fmtShort(x)) alle \(two(x.hh)):\(two(x.mi))" } }
+                            if !pastList.isEmpty {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Già passati a \(MONTHS[store.remM]):").font(.system(size: 13, weight: .bold)).foregroundStyle(pal.fg)
+                                    ForEach(pastList.indices, id: \.self) { i in Text(pastList[i]).font(.system(size: 13)).foregroundStyle(pal.ink2) }
+                                }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
+                            }
                         }
                         SecHead(text: "I tuoi promemoria")
                         list

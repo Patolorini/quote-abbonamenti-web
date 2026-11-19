@@ -131,6 +131,8 @@ button.d { cursor: pointer }
 .d.on { background: var(--accent); color: var(--on-accent); font-weight: 800 }
 .d.on::after { background: var(--on-accent) }
 .d.paused { background: var(--accent-soft); color: var(--accent); font-weight: 700 }
+.d.past { border: 1.5px dashed color-mix(in srgb, var(--accent) 70%, transparent); color: var(--accent); font-weight: 700 }
+.calnote.pastlist { color: var(--ink2); padding-top: 0 }
 .d.fires { box-shadow: inset 0 0 0 2px var(--accent); font-weight: 800 }
 .d.ghost { color: var(--ink2); text-decoration: line-through }
 .calnote { font-size: .8rem; color: var(--ink2); padding: 2px 6px 0 }
@@ -797,6 +799,14 @@ function nextWithMonth(r, count) {
   return out;
 }
 const firesIn = (r, y, m) => sequence(r, new Date(y, m + 2, 1)).filter((d) => d.getFullYear() === y && d.getMonth() === m);
+/** Promemoria da mostrare nel calendario: anche nei mesi passati (prima che fosse creato), come "già passato". */
+function shownIn(r, y, m) {
+  const f = firesIn(r, y, m), n = now();
+  if (f.length || r.rep !== "mese" || new Date(y, m, 1) > n) return f;
+  const d = occurrence(r, y, m), last = lastOcc(r);
+  return d < n && (!last || d <= last) ? [d] : [];
+}
+const subsLabel = (r) => r.all ? "Tutti gli abbonamenti" : (S.subs.filter((s) => r.subs.includes(s.id)).map((s) => s.name).join(", ") || "Promemoria");
 const subsOf = (r) => r.all ? S.subs : S.subs.filter((s) => r.subs.includes(s.id));
 const dayText = (r) => r.day === 0 ? "L'ultimo giorno del mese" : r.day > 28 ? `Il ${r.day} (o l'ultimo giorno)` : `Il ${r.day} del mese`;
 const whenText = (r) => r.rep === "una" ? `Una volta: ${withYear(occurrence(r, r.onceY, r.onceM))} alle ${two(r.h)}:${two(r.m)}` : `${dayText(r)} alle ${two(r.h)}:${two(r.m)}`;
@@ -1468,10 +1478,15 @@ function renderReminders(v) {
   const g = el("div", "group");
   calendar(g, remView, {
     redraw: render,
-    mark: (d) => { const cls = []; const { y, m } = remView;
-      for (const r of S.reminders) if (firesIn(r, y, m).some((x) => x.getDate() === d)) cls.push(r.on ? "on" : "paused");
-      return cls.includes("on") ? ["on"] : cls.length ? ["paused"] : []; },
-    extra: (w) => w.append(el("div", "calnote", `${cap(MONTHS[remView.m])} ha ${daysIn(remView.y, remView.m)} giorni. Pieno = promemoria attivo, chiaro = in pausa.`)),
+    mark: (d) => { const cls = []; const { y, m } = remView, n = now();
+      for (const r of S.reminders) for (const x of shownIn(r, y, m)) if (x.getDate() === d) cls.push(x < n ? "past" : r.on ? "on" : "paused");
+      return cls.includes("on") ? ["on"] : cls.includes("paused") ? ["paused"] : cls.length ? ["past"] : []; },
+    extra: (w) => {
+      const { y, m } = remView, n = now(), past = [];
+      for (const r of S.reminders) for (const x of shownIn(r, y, m)) if (x < n) past.push(`${r.label || subsLabel(r)}: ${fmtShort(x)} alle ${two(x.getHours())}:${two(x.getMinutes())}`);
+      w.append(el("div", "calnote", `${cap(MONTHS[m])} ha ${daysIn(y, m)} giorni. Pieno = promemoria in arrivo, chiaro = in pausa, tratteggiato = già passato.`));
+      if (past.length) { const pn = el("div", "calnote pastlist"); pn.innerHTML = `<b>Già passati a ${MONTHS[m]}:</b><br>` + past.map(esc).join("<br>"); w.append(pn); }
+    },
   });
   v.append(g, el("div", "sechead", "I tuoi promemoria"));
   const list = el("div", "group");
@@ -1722,7 +1737,7 @@ function renderSettings(v) {
   let wipe = false; const r9 = el("div", "row tap"), l9 = el("span", "grow danger", "Cancella tutti i dati"); r9.append(l9);
   r9.addEventListener("click", () => { if (!wipe) { wipe = true; l9.textContent = "Tocca di nuovo per cancellare tutto"; return; } const keep = S.settings; S = DEFAULT(); S.settings = keep; save(); render(); toast("Dati cancellati"); });
   g8.append(r9);
-  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 3.3 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
+  v.append(g8, el("div", "secfoot", A ? "Quote Abbonamenti per Android · versione 1.0" : "Quote Abbonamenti · versione web 3.4 · funziona anche senza internet · schermo " + Math.round(Math.max(screen.width, screen.height)) + "/" + window.innerHeight + "/" + document.documentElement.clientHeight));
 }
 function paymentsCSV() {
   const names = Object.fromEntries(S.subs.map((s) => [s.id, s.name]));
