@@ -1,0 +1,56 @@
+name: Prova APK sull'emulatore Android
+
+on:
+  push:
+    branches: [main]
+    paths: ["android/**", ".github/workflows/android-test.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  emulatore:
+    name: Android ${{ matrix.api }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [34, 35]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Abilita KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Installa e apri l'app
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: |
+            mkdir -p out
+            adb install -r android/QuoteAbbonamenti.apk > out/install-${{ matrix.api }}.txt 2>&1 || true
+            cat out/install-${{ matrix.api }}.txt
+            adb shell pm list packages ch.quoteabbonamenti >> out/install-${{ matrix.api }}.txt 2>&1 || true
+            adb logcat -c || true
+            adb shell am start -W -n ch.quoteabbonamenti.app/.MainActivity >> out/install-${{ matrix.api }}.txt 2>&1 || true
+            sleep 12
+            adb exec-out screencap -p > out/shot-${{ matrix.api }}.png || true
+            adb logcat -d -v brief > out/logcat-${{ matrix.api }}.txt 2>&1 || true
+            grep -iE "quoteabbonamenti|AndroidRuntime|FATAL|PackageManager|chromium" out/logcat-${{ matrix.api }}.txt | tail -150 > out/log-${{ matrix.api }}.txt || true
+            cat out/install-${{ matrix.api }}.txt
+
+      - name: Pubblica i risultati (release "android-prova")
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create android-prova --title "Prova APK sull'emulatore" --notes "Risultati automatici." --latest=false 2>/dev/null || true
+          gh release upload android-prova out/install-${{ matrix.api }}.txt out/shot-${{ matrix.api }}.png out/log-${{ matrix.api }}.txt --clobber || true
